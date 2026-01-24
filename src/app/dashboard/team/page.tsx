@@ -535,7 +535,7 @@ export default function TeamPage() {
       {teamLimitReached && (
         <div className="mb-6 bg-bg-secondary border border-border-color rounded-xl px-4 py-3 text-sm text-text-secondary">
           You have reached your team member limit
-          {teamLimits !== "unlimited" && teamLimits !== null
+          {typeof teamLimits === "number"
             ? ` (${totalMembers}/${teamLimits}).`
             : "."}
           Upgrade your plan to add more members.
