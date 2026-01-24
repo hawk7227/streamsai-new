@@ -4,13 +4,92 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import CTA from "@/components/home/CTA";
 import { useState } from "react";
+import { ALL_PLANS, type PlanKey } from "@/lib/plans";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function PricingPage() {
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
+  const [checkoutError, setCheckoutError] = useState("");
+  const [pendingPlan, setPendingPlan] = useState<PlanKey | null>(null);
+  const { user } = useAuth();
 
-  const prices = {
-    starter: { monthly: 29, yearly: 24 },
-    pro: { monthly: 99, yearly: 82 },
+  const planVisuals: Record<
+    PlanKey,
+    { iconBg: string; ctaClassName: string; icon: JSX.Element }
+  > = {
+    free: {
+      iconBg: "from-zinc-600 to-zinc-700",
+      ctaClassName:
+        "block w-full py-3.5 rounded-xl font-bold text-center bg-bg-tertiary border border-border-color text-white mb-6 transition-all hover:bg-white/5",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6 text-white">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        </svg>
+      ),
+    },
+    starter: {
+      iconBg: "from-blue-500 to-blue-600",
+      ctaClassName:
+        "block w-full py-3.5 rounded-xl font-bold text-center bg-bg-tertiary border border-border-color text-white mb-6 transition-all hover:bg-white/5",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6 text-white">
+          <path d="M12 3l1.912 5.813a2 2 0 001.272 1.272L21 12l-5.816 1.915a2 2 0 00-1.272 1.272L12 21l-1.912-5.813a2 2 0 00-1.272-1.272L3 12l5.816-1.915a2 2 0 001.272-1.272L12 3z" />
+        </svg>
+      ),
+    },
+    professional: {
+      iconBg: "from-accent-indigo to-accent-purple",
+      ctaClassName:
+        "block w-full py-3.5 rounded-xl font-bold text-center bg-gradient-to-r from-accent-indigo to-accent-purple text-white mb-6 transition-all hover:shadow-[0_8px_30px_rgba(99,102,241,0.4)]",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6 text-white">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+        </svg>
+      ),
+    },
+    enterprise: {
+      iconBg: "from-purple-500 to-purple-600",
+      ctaClassName:
+        "block w-full py-3.5 rounded-xl font-bold text-center bg-bg-tertiary border border-border-color text-white mb-6 transition-all hover:bg-white/5",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6 text-white">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+          <line x1="3" y1="9" x2="21" y2="9" />
+          <line x1="9" y1="21" x2="9" y2="9" />
+        </svg>
+      ),
+    },
+  };
+
+  const handleCheckout = async (planKey: PlanKey) => {
+    setCheckoutError("");
+    setPendingPlan(planKey);
+
+    try {
+      const response = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planKey, billing }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error ?? "Unable to start checkout");
+      }
+
+      if (data?.url) {
+        window.location.href = data.url;
+        return;
+      }
+
+      throw new Error("Missing checkout session URL");
+    } catch (error) {
+      setCheckoutError(
+        error instanceof Error ? error.message : "Unable to start checkout"
+      );
+      setPendingPlan(null);
+    }
   };
 
   return (
@@ -54,232 +133,93 @@ export default function PricingPage() {
               </button>
             </div>
 
+            {checkoutError && (
+              <p className="text-sm text-accent-red mb-6">{checkoutError}</p>
+            )}
+
             {/* Pricing Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-24">
-              {/* Free */}
-              <div className="bg-bg-secondary border border-border-color rounded-3xl p-8 transition-all hover:border-border-hover hover:-translate-y-1 text-left">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-zinc-600 to-zinc-700 flex items-center justify-center mb-5">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    className="w-6 h-6 text-white"
-                  >
-                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                  </svg>
-                </div>
-                <h3 className="text-2xl font-bold mb-2">Free</h3>
-                <p className="text-text-secondary text-sm mb-5">
-                  Try the platform
-                </p>
-                <div className="mb-6">
-                  <span className="text-5xl font-extrabold">$0</span>
-                  <span className="text-text-muted text-sm">/month</span>
-                </div>
-                <a
-                  href="/signup"
-                  className="block w-full py-3.5 rounded-xl font-bold text-center bg-bg-tertiary border border-border-color text-white mb-6 transition-all hover:bg-white/5"
-                >
-                  Get Started
-                </a>
-                <ul className="space-y-3">
-                  {[
-                    "10 generations/month",
-                    "720p resolution",
-                    "5 second max duration",
-                    "Community support",
-                  ].map((feature, i) => (
-                    <li
-                      key={i}
-                      className="flex items-center gap-3 text-sm text-text-secondary"
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        className="w-4 h-4 text-accent-emerald flex-shrink-0"
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              {ALL_PLANS.map((plan) => {
+                const visual = planVisuals[plan.key];
+                const price = plan.prices[billing];
+                const isCustom = price === null;
+                const canCheckout =
+                  !!user && plan.key !== "free" && plan.key !== "enterprise";
+                const isPending = pendingPlan === plan.key;
+                const ctaHref =
+                  user && plan.key === "free" ? "/dashboard" : plan.ctaHref;
+                const cardClassName = plan.isPopular
+                  ? "bg-bg-secondary border border-accent-indigo rounded-3xl p-8 transition-all hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(99,102,241,0.2)] text-left relative transform scale-105"
+                  : "bg-bg-secondary border border-border-color rounded-3xl p-8 transition-all hover:border-border-hover hover:-translate-y-1 text-left";
 
-              {/* Starter */}
-              <div className="bg-bg-secondary border border-border-color rounded-3xl p-8 transition-all hover:border-border-hover hover:-translate-y-1 text-left">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mb-5">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    className="w-6 h-6 text-white"
-                  >
-                    <path d="M12 3l1.912 5.813a2 2 0 001.272 1.272L21 12l-5.816 1.915a2 2 0 00-1.272 1.272L12 21l-1.912-5.813a2 2 0 00-1.272-1.272L3 12l5.816-1.915a2 2 0 001.272-1.272L12 3z" />
-                  </svg>
-                </div>
-                <h3 className="text-2xl font-bold mb-2">Starter</h3>
-                <p className="text-text-secondary text-sm mb-5">
-                  For individuals
-                </p>
-                <div className="mb-6">
-                  <span className="text-5xl font-extrabold">
-                    ${billing === "monthly" ? prices.starter.monthly : prices.starter.yearly}
-                  </span>
-                  <span className="text-text-muted text-sm">/month</span>
-                </div>
-                <a
-                  href="/signup"
-                  className="block w-full py-3.5 rounded-xl font-bold text-center bg-bg-tertiary border border-border-color text-white mb-6 transition-all hover:bg-white/5"
-                >
-                  Start Free Trial
-                </a>
-                <ul className="space-y-3">
-                  {[
-                    "100 generations/month",
-                    "1080p resolution",
-                    "15 second max duration",
-                    "3 team members",
-                    "Email support",
-                  ].map((feature, i) => (
-                    <li
-                      key={i}
-                      className="flex items-center gap-3 text-sm text-text-secondary"
+                return (
+                  <div key={plan.key} className={cardClassName}>
+                    {plan.badge && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-accent-indigo to-accent-purple text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg">
+                        {plan.badge}
+                      </div>
+                    )}
+                    <div
+                      className={`w-12 h-12 rounded-xl bg-gradient-to-br ${visual.iconBg} flex items-center justify-center mb-5`}
                     >
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        className="w-4 h-4 text-accent-emerald flex-shrink-0"
+                      {visual.icon}
+                    </div>
+                    <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
+                    <p className="text-text-secondary text-sm mb-5">
+                      {plan.description}
+                    </p>
+                    <div className="mb-6">
+                      {isCustom ? (
+                        <span className="text-4xl font-bold text-text-secondary">
+                          Custom
+                        </span>
+                      ) : (
+                        <>
+                          <span className="text-5xl font-extrabold">
+                            ${price}
+                          </span>
+                          <span className="text-text-muted text-sm">/month</span>
+                        </>
+                      )}
+                    </div>
+                    {canCheckout ? (
+                      <button
+                        type="button"
+                        onClick={() => handleCheckout(plan.key)}
+                        disabled={isPending}
+                        className={`${visual.ctaClassName} ${
+                          isPending ? "opacity-70 cursor-not-allowed" : ""
+                        }`}
                       >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Professional */}
-              <div className="bg-bg-secondary border border-accent-indigo rounded-3xl p-8 transition-all hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(99,102,241,0.2)] text-left relative transform scale-105">
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-accent-indigo to-accent-purple text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg">
-                  Most Popular
-                </div>
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent-indigo to-accent-purple flex items-center justify-center mb-5">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    className="w-6 h-6 text-white"
-                  >
-                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                  </svg>
-                </div>
-                <h3 className="text-2xl font-bold mb-2">Professional</h3>
-                <p className="text-text-secondary text-sm mb-5">For teams</p>
-                <div className="mb-6">
-                  <span className="text-5xl font-extrabold">
-                    ${billing === "monthly" ? prices.pro.monthly : prices.pro.yearly}
-                  </span>
-                  <span className="text-text-muted text-sm">/month</span>
-                </div>
-                <a
-                  href="/signup"
-                  className="block w-full py-3.5 rounded-xl font-bold text-center bg-gradient-to-r from-accent-indigo to-accent-purple text-white mb-6 transition-all hover:shadow-[0_8px_30px_rgba(99,102,241,0.4)]"
-                >
-                  Start Free Trial
-                </a>
-                <ul className="space-y-3">
-                  {[
-                    "500 generations/month",
-                    "4K resolution",
-                    "60 second max duration",
-                    "10 team members",
-                    "API access",
-                    "Priority support",
-                  ].map((feature, i) => (
-                    <li
-                      key={i}
-                      className="flex items-center gap-3 text-sm text-text-secondary"
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        className="w-4 h-4 text-accent-emerald flex-shrink-0"
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Enterprise */}
-              <div className="bg-bg-secondary border border-border-color rounded-3xl p-8 transition-all hover:border-border-hover hover:-translate-y-1 text-left">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center mb-5">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    className="w-6 h-6 text-white"
-                  >
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                    <line x1="3" y1="9" x2="21" y2="9" />
-                    <line x1="9" y1="21" x2="9" y2="9" />
-                  </svg>
-                </div>
-                <h3 className="text-2xl font-bold mb-2">Enterprise</h3>
-                <p className="text-text-secondary text-sm mb-5">
-                  For organizations
-                </p>
-                <div className="mb-6">
-                  <span className="text-4xl font-bold text-text-secondary">
-                    Custom
-                  </span>
-                </div>
-                <a
-                  href="#"
-                  className="block w-full py-3.5 rounded-xl font-bold text-center bg-bg-tertiary border border-border-color text-white mb-6 transition-all hover:bg-white/5"
-                >
-                  Contact Sales
-                </a>
-                <ul className="space-y-3">
-                  {[
-                    "Unlimited generations",
-                    "4K resolution",
-                    "5 minute max duration",
-                    "Unlimited team members",
-                    "Custom branding",
-                    "SSO & dedicated support",
-                  ].map((feature, i) => (
-                    <li
-                      key={i}
-                      className="flex items-center gap-3 text-sm text-text-secondary"
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        className="w-4 h-4 text-accent-emerald flex-shrink-0"
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+                        {isPending ? "Redirecting..." : plan.cta}
+                      </button>
+                    ) : (
+                      <a href={ctaHref} className={visual.ctaClassName}>
+                        {plan.cta}
+                      </a>
+                    )}
+                    <ul className="space-y-3">
+                      {plan.features.map((feature, i) => (
+                        <li
+                          key={i}
+                          className="flex items-center gap-3 text-sm text-text-secondary"
+                        >
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            className="w-4 h-4 text-accent-emerald flex-shrink-0"
+                          >
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>

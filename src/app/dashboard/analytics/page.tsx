@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { formatRelativeTime } from "@/lib/formatters";
 
 export default function AnalyticsPage() {
   const [animatedValues, setAnimatedValues] = useState({
@@ -9,39 +10,71 @@ export default function AnalyticsPage() {
     projects: 0,
     teamMembers: 0,
   });
+  const [chartData, setChartData] = useState({
+    labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    generations: [0, 0, 0, 0, 0, 0, 0],
+    timeSaved: [0, 0, 0, 0, 0, 0, 0],
+    projects: [0, 0, 0, 0, 0, 0, 0],
+  });
+  const [distribution, setDistribution] = useState<
+    Array<{ type: string; percentage: number }>
+  >([
+    { type: "video", percentage: 0 },
+    { type: "image", percentage: 0 },
+    { type: "voice", percentage: 0 },
+    { type: "script", percentage: 0 },
+  ]);
+  const [recentActivity, setRecentActivity] = useState<
+    Array<{ id: string; type: string; created_at: string }>
+  >([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    // Animate numbers on mount
-    const duration = 2000;
-    const steps = 60;
-    const interval = duration / steps;
+    let isMounted = true;
 
-    const animate = (key: keyof typeof animatedValues, target: number) => {
-      let current = 0;
-      const increment = target / steps;
-      const timer = setInterval(() => {
-        current += increment;
-        if (current >= target) {
-          current = target;
-          clearInterval(timer);
+    const loadAnalytics = async () => {
+      setLoading(true);
+      setError("");
+
+      try {
+        const response = await fetch("/api/analytics");
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data?.error ?? "Failed to load analytics");
         }
-        setAnimatedValues((prev) => ({ ...prev, [key]: Math.floor(current) }));
-      }, interval);
+
+        if (isMounted) {
+          setChartData(data.chart);
+          setDistribution(data.distribution);
+          setRecentActivity(data.recentActivity ?? []);
+          setAnimatedValues({
+            generations: data.totals.generations,
+            timeSaved: data.totals.timeSavedHours,
+            projects: data.totals.projects,
+            teamMembers: data.totals.teamMembers,
+          });
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : "Failed to load analytics");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
     };
 
-    animate("generations", 1247);
-    animate("timeSaved", 156);
-    animate("projects", 89);
-    animate("teamMembers", 12);
+    void loadAnalytics();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  const chartData = {
-    generations: [42, 58, 45, 67, 89, 102, 124],
-    timeSaved: [12, 18, 15, 22, 28, 35, 42],
-    projects: [8, 12, 15, 18, 22, 28, 35],
-  };
-
-  const maxValue = Math.max(...chartData.generations);
+  const maxValue = Math.max(...chartData.generations, 1);
 
   return (
     <div className="max-w-[1600px] mx-auto space-y-6">
@@ -62,6 +95,11 @@ export default function AnalyticsPage() {
           </select>
         </div>
       </div>
+      {error && (
+        <div className="text-sm text-accent-red bg-accent-red/10 border border-accent-red/20 rounded-xl px-4 py-3">
+          {error}
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -69,32 +107,24 @@ export default function AnalyticsPage() {
           {
             label: "Total Generations",
             value: animatedValues.generations.toLocaleString(),
-            change: "+24%",
-            trend: "up",
             icon: "⚡",
             bgClass: "bg-accent-indigo/10",
           },
           {
             label: "Time Saved (hours)",
             value: animatedValues.timeSaved,
-            change: "+18%",
-            trend: "up",
             icon: "⏱️",
             bgClass: "bg-accent-emerald/10",
           },
           {
             label: "Projects Created",
             value: animatedValues.projects,
-            change: "+12%",
-            trend: "up",
             icon: "📁",
             bgClass: "bg-accent-amber/10",
           },
           {
             label: "Team Members",
             value: animatedValues.teamMembers,
-            change: "+2",
-            trend: "up",
             icon: "👥",
             bgClass: "bg-accent-purple/10",
           },
@@ -109,22 +139,6 @@ export default function AnalyticsPage() {
               >
                 {stat.icon}
               </div>
-              <span
-                className={`text-sm font-medium flex items-center gap-1 ${
-                  stat.trend === "up" ? "text-accent-emerald" : "text-accent-red"
-                }`}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="w-4 h-4"
-                >
-                  <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-                </svg>
-                {stat.change}
-              </span>
             </div>
             <div className="text-3xl font-bold mb-1">{stat.value}</div>
             <div className="text-sm text-text-muted">{stat.label}</div>
@@ -149,7 +163,7 @@ export default function AnalyticsPage() {
                 <div key={i} className="flex-1 flex flex-col items-center gap-2">
                   <div className="w-full flex flex-col justify-end h-full">
                     <div
-                      className="w-full bg-gradient-to-t from-accent-indigo to-accent-purple rounded-t-lg transition-all duration-1000 ease-out hover:opacity-80"
+                      className="w-full bg-linear-to-t from-accent-indigo to-accent-purple rounded-t-lg transition-all duration-1000 ease-out hover:opacity-80"
                       style={{
                         height: `${height}%`,
                         animation: `growUp 1s ease-out ${i * 0.1}s both`,
@@ -157,7 +171,7 @@ export default function AnalyticsPage() {
                     />
                   </div>
                   <span className="text-xs text-text-muted">
-                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][i]}
+                    {chartData.labels[i] ?? ""}
                   </span>
                 </div>
               );
@@ -175,13 +189,13 @@ export default function AnalyticsPage() {
           </div>
           <div className="h-64 flex items-end justify-between gap-2">
             {chartData.timeSaved.map((value, i) => {
-              const maxTime = Math.max(...chartData.timeSaved);
+              const maxTime = Math.max(...chartData.timeSaved, 1);
               const height = (value / maxTime) * 100;
               return (
                 <div key={i} className="flex-1 flex flex-col items-center gap-2">
                   <div className="w-full flex flex-col justify-end h-full">
                     <div
-                      className="w-full bg-gradient-to-t from-accent-emerald to-accent-blue rounded-t-lg transition-all duration-1000 ease-out hover:opacity-80"
+                      className="w-full bg-linear-to-t from-accent-emerald to-accent-blue rounded-t-lg transition-all duration-1000 ease-out hover:opacity-80"
                       style={{
                         height: `${height}%`,
                         animation: `growUp 1s ease-out ${i * 0.1}s both`,
@@ -189,7 +203,7 @@ export default function AnalyticsPage() {
                     />
                   </div>
                   <span className="text-xs text-text-muted">
-                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][i]}
+                    {chartData.labels[i] ?? ""}
                   </span>
                 </div>
               );
@@ -203,28 +217,38 @@ export default function AnalyticsPage() {
         <div className="bg-bg-secondary border border-border-color rounded-2xl p-6">
           <h3 className="text-lg font-semibold mb-6">Content Type Distribution</h3>
           <div className="space-y-4">
-            {[
-              { type: "Videos", percentage: 45, gradient: "from-accent-indigo to-accent-purple" },
-              { type: "Images", percentage: 28, gradient: "from-accent-orange to-accent-red" },
-              { type: "Voice", percentage: 15, gradient: "from-accent-purple to-accent-pink" },
-              { type: "Scripts", percentage: 12, gradient: "from-accent-emerald to-accent-blue" },
-            ].map((item, i) => (
-              <div key={i} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">{item.type}</span>
-                  <span className="text-sm text-text-muted">{item.percentage}%</span>
+            {distribution.map((item, i) => {
+              const gradient =
+                item.type === "video"
+                  ? "from-accent-indigo to-accent-purple"
+                  : item.type === "image"
+                  ? "from-accent-orange to-accent-red"
+                  : item.type === "voice"
+                  ? "from-accent-purple to-accent-pink"
+                  : "from-accent-emerald to-accent-blue";
+              const label =
+                item.type.charAt(0).toUpperCase() + item.type.slice(1);
+
+              return (
+                <div key={item.type} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">{label}</span>
+                    <span className="text-sm text-text-muted">
+                      {item.percentage}%
+                    </span>
+                  </div>
+                  <div className="h-2 bg-bg-tertiary rounded-full overflow-hidden">
+                    <div
+                      className={`h-full bg-linear-to-r ${gradient} rounded-full transition-all duration-1000 ease-out`}
+                      style={{
+                        width: `${item.percentage}%`,
+                        animation: `slideIn 1s ease-out ${i * 0.2}s both`,
+                      }}
+                    />
+                  </div>
                 </div>
-                <div className="h-2 bg-bg-tertiary rounded-full overflow-hidden">
-                  <div
-                    className={`h-full bg-gradient-to-r ${item.gradient} rounded-full transition-all duration-1000 ease-out`}
-                    style={{
-                      width: `${item.percentage}%`,
-                      animation: `slideIn 1s ease-out ${i * 0.2}s both`,
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -232,28 +256,40 @@ export default function AnalyticsPage() {
         <div className="bg-bg-secondary border border-border-color rounded-2xl p-6">
           <h3 className="text-lg font-semibold mb-6">Recent Activity</h3>
           <div className="space-y-4">
-            {[
-              { action: "Video generated", user: "You", time: "2 min ago", icon: "🎬" },
-              { action: "Image created", user: "Sarah", time: "15 min ago", icon: "🖼️" },
-              { action: "Script written", user: "Mike", time: "1 hour ago", icon: "📝" },
-              { action: "Voice generated", user: "You", time: "2 hours ago", icon: "🎙️" },
-              { action: "Project shared", user: "David", time: "3 hours ago", icon: "📤" },
-            ].map((activity, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-3 p-3 rounded-xl bg-bg-tertiary hover:bg-bg-primary transition-colors"
-              >
-                <div className="w-10 h-10 rounded-lg bg-accent-indigo/10 flex items-center justify-center text-xl">
-                  {activity.icon}
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">
-                    {activity.action} by {activity.user}
-                  </p>
-                  <p className="text-xs text-text-muted">{activity.time}</p>
-                </div>
+            {recentActivity.length === 0 && (
+              <div className="text-sm text-text-muted">
+                {loading ? "Loading activity..." : "No recent activity yet."}
               </div>
-            ))}
+            )}
+            {recentActivity.map((activity) => {
+              const icon =
+                activity.type === "video"
+                  ? "🎬"
+                  : activity.type === "image"
+                  ? "🖼️"
+                  : activity.type === "voice"
+                  ? "🎙️"
+                  : "📝";
+              const label =
+                activity.type.charAt(0).toUpperCase() + activity.type.slice(1);
+
+              return (
+                <div
+                  key={activity.id}
+                  className="flex items-center gap-3 p-3 rounded-xl bg-bg-tertiary hover:bg-bg-primary transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-accent-indigo/10 flex items-center justify-center text-xl">
+                    {icon}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{label} generated by You</p>
+                    <p className="text-xs text-text-muted">
+                      {formatRelativeTime(activity.created_at)}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

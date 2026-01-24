@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { createClient } from "@/lib/supabase/client";
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user, profile, updateProfile, membershipRole, workspaceLoading } =
+    useAuth();
   const [activeTab, setActiveTab] = useState("profile");
   const [formData, setFormData] = useState({
-    name: user?.user_metadata?.full_name || "",
-    email: user?.email || "",
+    name: "",
+    email: "",
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
@@ -16,6 +18,16 @@ export default function SettingsPage() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const supabase = useMemo(() => createClient(), []);
+
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      name: profile?.full_name || "",
+      email: user?.email || "",
+    }));
+    setProfileImage(profile?.avatar_url || null);
+  }, [profile, user]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -34,19 +46,39 @@ export default function SettingsPage() {
     setMessage(null);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      setMessage({ type: "success", text: "Settings updated successfully!" });
-      
-      // Reset password fields
-      if (activeTab === "password") {
-        setFormData((prev) => ({
-          ...prev,
-          currentPassword: "",
-          newPassword: "",
-          confirmPassword: "",
-        }));
+      if (activeTab === "profile") {
+        const { error } = await updateProfile({
+          full_name: formData.name.trim(),
+          avatar_url: profileImage,
+        });
+
+        if (error) {
+          setMessage({ type: "error", text: error });
+        } else {
+          setMessage({ type: "success", text: "Settings updated successfully!" });
+        }
+      } else {
+        if (formData.newPassword !== formData.confirmPassword) {
+          setMessage({ type: "error", text: "Passwords do not match." });
+          setIsLoading(false);
+          return;
+        }
+
+        const { error } = await supabase.auth.updateUser({
+          password: formData.newPassword,
+        });
+
+        if (error) {
+          setMessage({ type: "error", text: error.message });
+        } else {
+          setMessage({ type: "success", text: "Password updated successfully!" });
+          setFormData((prev) => ({
+            ...prev,
+            currentPassword: "",
+            newPassword: "",
+            confirmPassword: "",
+          }));
+        }
       }
     } catch (error) {
       setMessage({ type: "error", text: "Failed to update settings. Please try again." });
@@ -59,6 +91,37 @@ export default function SettingsPage() {
     { id: "profile", label: "Profile" },
     { id: "password", label: "Password" },
   ];
+
+  if (workspaceLoading) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold mb-1">Settings</h1>
+          <p className="text-text-secondary text-sm">Loading workspace...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (membershipRole === "member") {
+    return (
+      <div className="max-w-3xl mx-auto space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold mb-1">Settings</h1>
+          <p className="text-text-secondary text-sm">
+            Manage your account settings and preferences
+          </p>
+        </div>
+        <div className="bg-bg-secondary border border-border-color rounded-2xl p-6">
+          <h2 className="text-lg font-semibold mb-2">Access restricted</h2>
+          <p className="text-sm text-text-secondary">
+            Your role does not allow access to settings. Please contact an admin
+            or the workspace owner if you need changes.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
