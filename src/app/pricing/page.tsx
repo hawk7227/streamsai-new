@@ -3,7 +3,7 @@
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import CTA from "@/components/home/CTA";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { ALL_PLANS, type PlanKey } from "@/lib/plans";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -15,7 +15,7 @@ export default function PricingPage() {
 
   const planVisuals: Record<
     PlanKey,
-    { iconBg: string; ctaClassName: string; icon: JSX.Element }
+    { iconBg: string; ctaClassName: string; icon: ReactNode }
   > = {
     free: {
       iconBg: "from-zinc-600 to-zinc-700",
