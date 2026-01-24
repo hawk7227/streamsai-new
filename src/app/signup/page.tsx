@@ -19,7 +19,7 @@ export default function SignupPage() {
   const [otp, setOtp] = useState("");
   const supabase = createClient();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
 
   useEffect(() => {
     if (user) {
@@ -105,23 +105,14 @@ export default function SignupPage() {
     setIsLoading(true);
     setError("");
 
-    // Get the user
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
-
-    if (currentUser) {
-      // Create or update profile
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .upsert({
-          id: currentUser.id,
-          email: formData.email,
-          full_name: formData.fullName,
-          org_name: formData.orgName || null,
-          updated_at: new Date().toISOString(),
-        });
+    if (user) {
+      const { error: profileError } = await updateProfile({
+        full_name: formData.fullName,
+        org_name: formData.orgName || null,
+      });
 
       if (profileError) {
-        setError(profileError.message);
+        setError(profileError);
         setIsLoading(false);
       } else {
         router.push("/onboarding");

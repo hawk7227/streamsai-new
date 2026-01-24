@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { listGenerations, type GenerationRecord } from "@/lib/generations";
+import { formatRelativeTime, truncateText } from "@/lib/formatters";
 
 export default function LibraryPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -8,6 +10,19 @@ export default function LibraryPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [files, setFiles] = useState<
+    Array<{
+      id: string;
+      title: string;
+      type: "video" | "image" | "audio" | "script";
+      size: string;
+      time: string;
+      duration?: string;
+      gradient: string;
+    }>
+  >([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const filters = [
     { id: "All", label: "All", icon: "" },
@@ -17,93 +32,60 @@ export default function LibraryPage() {
     { id: "Scripts", label: "Scripts", icon: "📝" },
   ];
 
-  const files = [
-    {
-      id: 1,
-      title: "Futuristic city sunset",
-      type: "video",
-      size: "24 MB",
-      time: "5 min ago",
-      duration: "0:08",
-      gradient: "from-pink-500/20 to-purple-500/20",
-    },
-    {
-      id: 2,
-      title: "Product earbuds photo",
-      type: "image",
-      size: "2.4 MB",
-      time: "12 min ago",
-      gradient: "from-purple-500/20 to-indigo-500/20",
-    },
-    {
-      id: 3,
-      title: "Welcome voiceover",
-      type: "audio",
-      size: "1.2 MB",
-      time: "1 hour ago",
-      duration: "0:45",
-      gradient: "from-emerald-500/20 to-teal-500/20",
-    },
-    {
-      id: 4,
-      title: "Launch video script",
-      type: "script",
-      size: "4 KB",
-      time: "2 hours ago",
-      gradient: "from-blue-500/20 to-indigo-500/20",
-    },
-    {
-      id: 5,
-      title: "Nature landscape 4K",
-      type: "video",
-      size: "156 MB",
-      time: "3 hours ago",
-      duration: "0:16",
-      gradient: "from-amber-500/20 to-orange-500/20",
-    },
-    {
-      id: 6,
-      title: "Social media banner",
-      type: "image",
-      size: "1.8 MB",
-      time: "Yesterday",
-      gradient: "from-rose-500/20 to-pink-500/20",
-    },
-    {
-      id: 7,
-      title: "Product demo video",
-      type: "video",
-      size: "45 MB",
-      time: "Yesterday",
-      duration: "0:30",
-      gradient: "from-cyan-500/20 to-blue-500/20",
-    },
-    {
-      id: 8,
-      title: "Podcast intro",
-      type: "audio",
-      size: "800 KB",
-      time: "2 days ago",
-      duration: "1:20",
-      gradient: "from-violet-500/20 to-purple-500/20",
-    },
-    {
-      id: 9,
-      title: "Email sequence copy",
-      type: "script",
-      size: "8 KB",
-      time: "2 days ago",
-      gradient: "from-teal-500/20 to-emerald-500/20",
-    },
-    {
-      id: 10,
-      title: "Team headshots",
-      type: "image",
-      size: "5.2 MB",
-      time: "3 days ago",
-      gradient: "from-indigo-500/20 to-blue-500/20",
-    },
-  ];
+  useEffect(() => {
+    let isMounted = true;
+
+    const mapGeneration = (item: GenerationRecord) => {
+      const type: "video" | "image" | "audio" | "script" =
+        item.type === "voice"
+          ? "audio"
+          : item.type === "image"
+          ? "image"
+          : item.type === "script"
+          ? "script"
+          : "video";
+      const gradient =
+        type === "video"
+          ? "from-pink-500/20 to-purple-500/20"
+          : type === "image"
+          ? "from-purple-500/20 to-indigo-500/20"
+          : type === "audio"
+          ? "from-emerald-500/20 to-teal-500/20"
+          : "from-blue-500/20 to-indigo-500/20";
+
+      return {
+        id: item.id,
+        title: truncateText(item.title ?? item.prompt, 40),
+        type,
+        size: "—",
+        time: formatRelativeTime(item.created_at),
+        duration: item.duration ?? undefined,
+        gradient,
+      };
+    };
+
+    listGenerations({ limit: 50 })
+      .then((data) => {
+        if (isMounted) {
+          setError("");
+          setFiles(data.map(mapGeneration));
+        }
+      })
+      .catch((err) => {
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : "Failed to load files");
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const getFileIcon = (type: string) => {
     switch (type) {
@@ -120,17 +102,21 @@ export default function LibraryPage() {
     }
   };
 
-  const filteredFiles =
-    activeFilter === "All"
-      ? files
-      : files.filter((file) => file.type === activeFilter.toLowerCase());
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filteredFiles = files.filter((file) => {
+    const matchesFilter =
+      activeFilter === "All" || file.type === activeFilter.toLowerCase();
+    const matchesSearch =
+      !normalizedQuery || file.title.toLowerCase().includes(normalizedQuery);
+    return matchesFilter && matchesSearch;
+  });
 
-  const totalFiles = 156;
-  const totalSize = "2.4 GB";
-  const totalPages = Math.ceil(totalFiles / itemsPerPage);
+  const totalFiles = files.length;
+  const totalSize = "—";
+  const totalPages = Math.max(1, Math.ceil(filteredFiles.length / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const displayedFiles = filteredFiles.slice(0, itemsPerPage);
+  const displayedFiles = filteredFiles.slice(startIndex, endIndex);
 
   return (
     <div className="flex-1 flex flex-col -m-6 lg:-m-8">
@@ -143,9 +129,6 @@ export default function LibraryPage() {
           </span>
         </div>
         <div className="flex items-center gap-3">
-          <button className="px-4 py-2 rounded-xl bg-gradient-to-r from-accent-indigo to-accent-purple text-white text-sm font-medium flex items-center gap-2 hover:shadow-lg hover:shadow-accent-indigo/25 transition-all">
-            ⬆️ Upload
-          </button>
         </div>
       </header>
 
@@ -161,7 +144,10 @@ export default function LibraryPage() {
                 type="text"
                 placeholder="Search files..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-border-color bg-bg-secondary text-white text-sm placeholder-text-muted focus:outline-none focus:border-accent-indigo/50"
               />
             </div>
@@ -169,7 +155,10 @@ export default function LibraryPage() {
               {filters.map((filter) => (
                 <button
                   key={filter.id}
-                  onClick={() => setActiveFilter(filter.id)}
+                  onClick={() => {
+                    setActiveFilter(filter.id);
+                    setCurrentPage(1);
+                  }}
                   className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
                     activeFilter === filter.id
                       ? "bg-accent-indigo/10 text-accent-indigo"
@@ -205,84 +194,101 @@ export default function LibraryPage() {
             </div>
           </div>
 
-          {/* File Grid */}
-          {viewMode === "grid" ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {displayedFiles.map((file) => (
-                <div
-                  key={file.id}
-                  className="bg-bg-secondary border border-border-color rounded-xl overflow-hidden group cursor-pointer hover:border-accent-indigo/30 transition-all"
-                >
-                  <div
-                    className={`aspect-video bg-gradient-to-br ${file.gradient} flex items-center justify-center relative`}
-                  >
-                    <span className="text-4xl">{getFileIcon(file.type)}</span>
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                      <button className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
-                        {file.type === "video" || file.type === "audio" ? "▶️" : "👁️"}
-                      </button>
-                      <button className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
-                        ⬇️
-                      </button>
-                      <button className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
-                        ⭐
-                      </button>
+          {loading && (
+            <div className="text-sm text-text-muted">Loading library...</div>
+          )}
+          {!loading && error && (
+            <div className="text-sm text-accent-red">{error}</div>
+          )}
+          {!loading && !error && displayedFiles.length === 0 && (
+            <div className="text-sm text-text-muted">No files yet.</div>
+          )}
+          {!loading && !error && displayedFiles.length > 0 && (
+            <>
+              {/* File Grid */}
+              {viewMode === "grid" ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                  {displayedFiles.map((file) => (
+                    <div
+                      key={file.id}
+                      className="bg-bg-secondary border border-border-color rounded-xl overflow-hidden group cursor-pointer hover:border-accent-indigo/30 transition-all"
+                    >
+                      <div
+                        className={`aspect-video bg-linear-to-br ${file.gradient} flex items-center justify-center relative`}
+                      >
+                        <span className="text-4xl">{getFileIcon(file.type)}</span>
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          <button className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
+                            {file.type === "video" || file.type === "audio"
+                              ? "▶️"
+                              : "👁️"}
+                          </button>
+                          <button className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
+                            ⬇️
+                          </button>
+                          <button className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
+                            ⭐
+                          </button>
+                        </div>
+                        {file.duration && (
+                          <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded text-[10px] bg-black/60">
+                            {file.duration}
+                          </span>
+                        )}
+                      </div>
+                      <div className="p-3">
+                        <p className="text-sm font-medium truncate">{file.title}</p>
+                        <p className="text-xs text-text-muted">
+                          {file.time} • {file.size}
+                        </p>
+                      </div>
                     </div>
-                    {file.duration && (
-                      <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded text-[10px] bg-black/60">
-                        {file.duration}
-                      </span>
-                    )}
-                  </div>
-                  <div className="p-3">
-                    <p className="text-sm font-medium truncate">{file.title}</p>
-                    <p className="text-xs text-text-muted">
-                      {file.time} • {file.size}
-                    </p>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {displayedFiles.map((file) => (
-                <div
-                  key={file.id}
-                  className="bg-bg-secondary border border-border-color rounded-xl p-4 flex items-center gap-4 hover:border-accent-indigo/30 transition-all cursor-pointer group"
-                >
-                  <div
-                    className={`w-16 h-16 rounded-lg bg-gradient-to-br ${file.gradient} flex items-center justify-center flex-shrink-0`}
-                  >
-                    <span className="text-2xl">{getFileIcon(file.type)}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{file.title}</p>
-                    <p className="text-xs text-text-muted">
-                      {file.time} • {file.size}
-                      {file.duration && ` • ${file.duration}`}
-                    </p>
-                  </div>
-                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-2 rounded-lg bg-bg-tertiary hover:bg-bg-primary transition-colors">
-                      {file.type === "video" || file.type === "audio" ? "▶️" : "👁️"}
-                    </button>
-                    <button className="p-2 rounded-lg bg-bg-tertiary hover:bg-bg-primary transition-colors">
-                      ⬇️
-                    </button>
-                    <button className="p-2 rounded-lg bg-bg-tertiary hover:bg-bg-primary transition-colors">
-                      ⭐
-                    </button>
-                  </div>
+              ) : (
+                <div className="space-y-2">
+                  {displayedFiles.map((file) => (
+                    <div
+                      key={file.id}
+                      className="bg-bg-secondary border border-border-color rounded-xl p-4 flex items-center gap-4 hover:border-accent-indigo/30 transition-all cursor-pointer group"
+                    >
+                      <div
+                        className={`w-16 h-16 rounded-lg bg-linear-to-br ${file.gradient} flex items-center justify-center shrink-0`}
+                      >
+                        <span className="text-2xl">{getFileIcon(file.type)}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{file.title}</p>
+                        <p className="text-xs text-text-muted">
+                          {file.time} • {file.size}
+                          {file.duration && ` • ${file.duration}`}
+                        </p>
+                      </div>
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button className="p-2 rounded-lg bg-bg-tertiary hover:bg-bg-primary transition-colors">
+                          {file.type === "video" || file.type === "audio"
+                            ? "▶️"
+                            : "👁️"}
+                        </button>
+                        <button className="p-2 rounded-lg bg-bg-tertiary hover:bg-bg-primary transition-colors">
+                          ⬇️
+                        </button>
+                        <button className="p-2 rounded-lg bg-bg-tertiary hover:bg-bg-primary transition-colors">
+                          ⭐
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
 
           {/* Pagination */}
           <div className="flex flex-col sm:flex-row items-center justify-between pt-4 gap-4">
             <p className="text-sm text-text-muted">
-              Showing {startIndex + 1}-{Math.min(endIndex, totalFiles)} of{" "}
-              {totalFiles} files
+              Showing {totalFiles === 0 ? 0 : startIndex + 1}-
+              {Math.min(endIndex, totalFiles)} of {totalFiles} files
             </p>
             <div className="flex gap-2">
               <button

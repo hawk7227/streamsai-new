@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useMemo, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { ALL_PLANS, PLAN_ORDER, type PlanKey } from "@/lib/plans";
 
 export default function Sidebar({
   isOpen,
@@ -12,9 +14,89 @@ export default function Sidebar({
   onClose: () => void;
 }) {
   const pathname = usePathname();
-  const { user, signOut } = useAuth();
+  const { user, signOut, plan, limits, usage, usageLoading, membershipRole } =
+    useAuth();
+  const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
+  const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
+  const [checkoutError, setCheckoutError] = useState("");
+  const [pendingPlan, setPendingPlan] = useState<PlanKey | null>(null);
+  const [portalLoading, setPortalLoading] = useState(false);
 
   const isActive = (path: string) => pathname === path;
+  const currentPlanKey = plan?.key ?? "free";
+  const currentPlanIndex = PLAN_ORDER.indexOf(currentPlanKey);
+
+  const availablePlans = useMemo(() => ALL_PLANS, []);
+  const generationLimit = usage?.limit ?? limits?.generationsPerMonth ?? 0;
+  const isSettingsLocked = membershipRole === "member";
+  const generationsUsed = usage?.used ?? 0;
+  const isUnlimited = generationLimit === "unlimited";
+  const displayLimit = isUnlimited ? "Unlimited" : generationLimit;
+  const usagePercent = isUnlimited
+    ? 100
+    : typeof generationLimit === "number" && generationLimit > 0
+    ? Math.min(100, (generationsUsed / generationLimit) * 100)
+    : 0;
+  const usageText = usageLoading
+    ? "..."
+    : `${generationsUsed} / ${displayLimit}`;
+
+  const handleCheckout = async (planKey: PlanKey) => {
+    setCheckoutError("");
+    setPendingPlan(planKey);
+
+    try {
+      const response = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planKey, billing }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error ?? "Unable to start checkout");
+      }
+
+      if (data?.url) {
+        window.location.href = data.url;
+        return;
+      }
+
+      throw new Error("Missing checkout session URL");
+    } catch (error) {
+      setCheckoutError(
+        error instanceof Error ? error.message : "Unable to start checkout"
+      );
+      setPendingPlan(null);
+    }
+  };
+
+  const handlePortal = async () => {
+    setPortalLoading(true);
+    setCheckoutError("");
+
+    try {
+      const response = await fetch("/api/stripe/portal", { method: "POST" });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error ?? "Unable to open billing portal");
+      }
+
+      if (data?.url) {
+        window.location.href = data.url;
+        return;
+      }
+
+      throw new Error("Missing portal URL");
+    } catch (error) {
+      setCheckoutError(
+        error instanceof Error ? error.message : "Unable to open billing portal"
+      );
+      setPortalLoading(false);
+    }
+  };
 
   return (
     <>
@@ -247,26 +329,42 @@ export default function Sidebar({
               Account
             </div>
             <div className="space-y-1">
-              <Link
-                href="/dashboard/settings"
-                className={`flex items-center gap-3 px-3 py-3 rounded-[10px] text-sm font-medium transition-colors ${
-                  isActive("/dashboard/settings")
-                    ? "bg-accent-indigo/10 text-accent-indigo"
-                    : "text-text-secondary hover:bg-bg-tertiary hover:text-white"
-                }`}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="w-5 h-5"
+              {isSettingsLocked ? (
+                <div className="flex items-center gap-3 px-3 py-3 rounded-[10px] text-sm font-medium text-text-muted cursor-not-allowed opacity-60">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="w-5 h-5"
+                  >
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                  </svg>
+                  Settings
+                </div>
+              ) : (
+                <Link
+                  href="/dashboard/settings"
+                  className={`flex items-center gap-3 px-3 py-3 rounded-[10px] text-sm font-medium transition-colors ${
+                    isActive("/dashboard/settings")
+                      ? "bg-accent-indigo/10 text-accent-indigo"
+                      : "text-text-secondary hover:bg-bg-tertiary hover:text-white"
+                  }`}
                 >
-                  <circle cx="12" cy="12" r="3" />
-                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                </svg>
-                Settings
-              </Link>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="w-5 h-5"
+                  >
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                  </svg>
+                  Settings
+                </Link>
+              )}
               <a
                 href="#"
                 className="flex items-center gap-3 px-3 py-3 rounded-[10px] text-sm font-medium text-text-secondary transition-colors hover:bg-bg-tertiary hover:text-white"
@@ -311,16 +409,20 @@ export default function Sidebar({
               <span className="text-[13px] text-text-secondary">
                 Generations Used
               </span>
-              <span className="text-[13px] font-semibold">42 / 100</span>
+              <span className="text-[13px] font-semibold">{usageText}</span>
             </div>
             <div className="h-1.5 bg-bg-primary rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-accent-indigo to-accent-purple"
-                style={{ width: "42%" }}
+                style={{ width: `${usagePercent}%` }}
               />
             </div>
           </div>
-          <button className="w-full flex items-center justify-center gap-2 p-2.5 bg-gradient-to-r from-accent-indigo to-accent-purple text-white rounded-[10px] text-[13px] font-semibold transition-all hover:shadow-[0_4px_15px_rgba(99,102,241,0.3)]">
+          <button
+            type="button"
+            onClick={() => setIsPlanModalOpen(true)}
+            className="w-full flex items-center justify-center gap-2 p-2.5 bg-gradient-to-r from-accent-indigo to-accent-purple text-white rounded-[10px] text-[13px] font-semibold transition-all hover:shadow-[0_4px_15px_rgba(99,102,241,0.3)]"
+          >
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -330,10 +432,167 @@ export default function Sidebar({
             >
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
             </svg>
-            Upgrade to Pro
+            View Plans
           </button>
         </div>
       </aside>
+
+      {isPlanModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          <button
+            type="button"
+            onClick={() => setIsPlanModalOpen(false)}
+            className="absolute inset-0 bg-black/60"
+            aria-label="Close plan dialog"
+          />
+          <div className="relative w-full max-w-4xl mx-4 bg-bg-secondary border border-border-color rounded-3xl shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-border-color">
+              <div>
+                <h2 className="text-xl font-semibold">Plans & Billing</h2>
+                <p className="text-sm text-text-secondary">
+                  Choose a plan to upgrade your account
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPlanModalOpen(false)}
+                className="text-text-muted hover:text-white"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
+              <div className="inline-flex items-center gap-2 bg-bg-tertiary border border-border-color rounded-xl p-1">
+                <button
+                  type="button"
+                  onClick={() => setBilling("monthly")}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg ${
+                    billing === "monthly"
+                      ? "bg-white text-black"
+                      : "text-text-secondary hover:text-white"
+                  }`}
+                >
+                  Monthly
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBilling("yearly")}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg ${
+                    billing === "yearly"
+                      ? "bg-white text-black"
+                      : "text-text-secondary hover:text-white"
+                  }`}
+                >
+                  Yearly
+                </button>
+              </div>
+              {user && currentPlanKey !== "free" && (
+                <button
+                  type="button"
+                  onClick={handlePortal}
+                  disabled={portalLoading}
+                  className="px-4 py-2 rounded-lg border border-border-color text-sm font-medium text-text-secondary hover:text-white hover:border-border-hover disabled:opacity-60"
+                >
+                  {portalLoading ? "Opening..." : "Manage Billing"}
+                </button>
+              )}
+            </div>
+
+            {checkoutError && (
+              <p className="px-6 text-sm text-accent-red mb-4">{checkoutError}</p>
+            )}
+
+            <div className="px-6 pb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {availablePlans.map((planOption) => {
+                const price = planOption.prices[billing];
+                const isCustom = price === null;
+                const isCurrent = planOption.key === currentPlanKey;
+                const isUpgrade =
+                  PLAN_ORDER.indexOf(planOption.key) > currentPlanIndex;
+                const isPending = pendingPlan === planOption.key;
+                const canCheckout =
+                  !!user && isUpgrade && !isCustom && planOption.key !== "enterprise";
+
+                return (
+                  <div
+                    key={planOption.key}
+                    className={`border rounded-2xl p-4 ${
+                      isCurrent
+                        ? "border-accent-indigo bg-bg-tertiary"
+                        : "border-border-color bg-bg-tertiary/40"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-lg font-semibold">{planOption.name}</h3>
+                      {isCurrent && (
+                        <span className="text-[11px] font-semibold text-accent-indigo">
+                          Current
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-text-secondary mb-3">
+                      {planOption.description}
+                    </p>
+                    <div className="mb-3">
+                      {isCustom ? (
+                        <span className="text-sm text-text-muted">Custom pricing</span>
+                      ) : (
+                        <span className="text-2xl font-bold">${price}</span>
+                      )}
+                      {!isCustom && (
+                        <span className="text-xs text-text-muted">/mo</span>
+                      )}
+                    </div>
+                    <ul className="space-y-1.5 text-xs text-text-secondary mb-4">
+                      {planOption.features.slice(0, 3).map((feature) => (
+                        <li key={feature} className="flex items-center gap-2">
+                          <span className="text-accent-emerald">•</span>
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                    {isCurrent ? (
+                      <button
+                        type="button"
+                        disabled
+                        className="w-full py-2 rounded-lg bg-bg-primary text-xs font-semibold text-text-muted cursor-not-allowed"
+                      >
+                        Current Plan
+                      </button>
+                    ) : planOption.key === "enterprise" ? (
+                      <a
+                        href={planOption.ctaHref}
+                        className="w-full block text-center py-2 rounded-lg border border-border-color text-xs font-semibold text-text-secondary hover:text-white hover:border-border-hover"
+                      >
+                        Contact Sales
+                      </a>
+                    ) : canCheckout ? (
+                      <button
+                        type="button"
+                        onClick={() => handleCheckout(planOption.key)}
+                        disabled={isPending}
+                        className="w-full py-2 rounded-lg bg-gradient-to-r from-accent-indigo to-accent-purple text-xs font-semibold text-white disabled:opacity-60"
+                      >
+                        {isPending ? "Redirecting..." : "Upgrade"}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handlePortal}
+                        className="w-full py-2 rounded-lg border border-border-color text-xs font-semibold text-text-secondary hover:text-white hover:border-border-hover"
+                      >
+                        Manage Billing
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

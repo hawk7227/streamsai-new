@@ -1,20 +1,104 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  createGeneration,
+  listGenerations,
+  type GenerationRecord,
+} from "@/lib/generations";
+import { formatRelativeTime, truncateText } from "@/lib/formatters";
 
 export default function ImagePage() {
+  const { usage, usageLoading, incrementUsage } = useAuth();
   const [prompt, setPrompt] = useState("");
   const [aspectRatio, setAspectRatio] = useState("1:1");
   const [style, setStyle] = useState("Realistic");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [usageError, setUsageError] = useState("");
+  const [historyItems, setHistoryItems] = useState<GenerationRecord[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyError, setHistoryError] = useState("");
+
+  const isLimitReached =
+    typeof usage?.limit === "number" && usage.used >= usage.limit;
+
+  const handleGenerate = async () => {
+    if (isLimitReached || usageLoading || isGenerating) {
+      return;
+    }
+
+    if (!prompt.trim()) {
+      setUsageError("Please enter a prompt.");
+      return;
+    }
+
+    setUsageError("");
+    setIsGenerating(true);
+
+    const { error } = await incrementUsage(1);
+    if (error) {
+      setUsageError(error);
+      setIsGenerating(false);
+      return;
+    }
+
+    try {
+      const created = await createGeneration({
+        type: "image",
+        prompt,
+        title: truncateText(prompt, 48),
+        aspectRatio,
+        style,
+      });
+      setHistoryItems((prev) => [created, ...prev]);
+    } catch (createError) {
+      setUsageError(
+        createError instanceof Error
+          ? createError.message
+          : "Unable to save generation"
+      );
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const tabs = [
     { id: "script", label: "Script", icon: "📝" },
     { id: "voice", label: "Voice", icon: "🎙️" },
     { id: "image", label: "Image", icon: "🖼️" },
     { id: "video", label: "Video", icon: "🎬" },
-    { id: "edit", label: "Edit", icon: "✂️" },
   ];
+
+  useEffect(() => {
+    let isMounted = true;
+    setHistoryLoading(true);
+    setHistoryError("");
+
+    listGenerations({ type: "image", limit: 8 })
+      .then((data) => {
+        if (isMounted) {
+          setHistoryItems(data);
+        }
+      })
+      .catch((error) => {
+        if (isMounted) {
+          setHistoryError(
+            error instanceof Error ? error.message : "Unable to load history"
+          );
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setHistoryLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8">
@@ -121,9 +205,21 @@ export default function ImagePage() {
               </div>
             </div>
 
-            <button className="w-full py-4 rounded-xl bg-gradient-to-r from-accent-orange to-accent-red text-white font-semibold flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-accent-orange/30 transition-all">
-              ✨ Generate Image
+            <button
+              type="button"
+              onClick={handleGenerate}
+              disabled={isLimitReached || usageLoading || isGenerating}
+              className="w-full py-4 rounded-xl bg-gradient-to-r from-accent-orange to-accent-red text-white font-semibold flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-accent-orange/30 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isLimitReached
+                ? "Limit Reached"
+                : isGenerating
+                ? "Generating..."
+                : "✨ Generate Image"}
             </button>
+            {usageError && (
+              <p className="text-xs text-accent-red">{usageError}</p>
+            )}
           </div>
         </div>
       </div>
@@ -131,7 +227,37 @@ export default function ImagePage() {
       <div className="space-y-6">
         <div className="bg-bg-secondary border border-border-color rounded-2xl p-4">
           <h3 className="text-sm font-medium mb-3">Recent Images</h3>
-          <p className="text-xs text-text-muted">No images generated yet</p>
+          {historyLoading && (
+            <p className="text-xs text-text-muted">Loading images...</p>
+          )}
+          {!historyLoading && historyError && (
+            <p className="text-xs text-accent-red">{historyError}</p>
+          )}
+          {!historyLoading && !historyError && historyItems.length === 0 && (
+            <p className="text-xs text-text-muted">No images generated yet</p>
+          )}
+          {!historyLoading &&
+            !historyError &&
+            historyItems.map((item) => (
+              <div
+                key={item.id}
+                className="flex items-center gap-3 py-2 border-b border-white/[0.05] last:border-0"
+              >
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-accent-orange/20 to-accent-red/20 flex items-center justify-center">
+                  🖼️
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium truncate">
+                    {truncateText(item.title ?? item.prompt, 40)}
+                  </p>
+                  <p className="text-[10px] text-text-muted">
+                    {item.aspect_ratio && `${item.aspect_ratio} • `}
+                    {item.style && `${item.style} • `}
+                    {formatRelativeTime(item.created_at)}
+                  </p>
+                </div>
+              </div>
+            ))}
         </div>
       </div>
     </div>

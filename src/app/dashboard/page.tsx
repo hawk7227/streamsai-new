@@ -1,12 +1,179 @@
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getCurrentWorkspaceSelection } from "@/lib/team-server";
+import { formatRelativeTime, truncateText } from "@/lib/formatters";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let displayName = "there";
+  let monthGenerations = 0;
+  let totalGenerations = 0;
+  let recentGenerations: Array<{
+    id: string;
+    type: string;
+    prompt: string;
+    title: string | null;
+    duration: string | null;
+    aspect_ratio: string | null;
+    created_at: string;
+  }> = [];
+
+  let workspaceSelection: Awaited<
+    ReturnType<typeof getCurrentWorkspaceSelection>
+  > | null = null;
+
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name, email")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    displayName =
+      profile?.full_name?.split(" ")[0] ??
+      profile?.email?.split("@")[0] ??
+      user.email?.split("@")[0] ??
+      "there";
+
+    const admin = createAdminClient();
+    workspaceSelection = await getCurrentWorkspaceSelection(admin, user);
+    const now = new Date();
+    const monthStart = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
+    ).toISOString();
+
+    const [{ count: totalCount }, { count: monthCount }, recent] =
+      await Promise.all([
+        admin
+          .from("generations")
+          .select("id", { count: "exact", head: true })
+          .eq("workspace_id", workspaceSelection.current.workspace.id),
+        admin
+          .from("generations")
+          .select("id", { count: "exact", head: true })
+          .eq("workspace_id", workspaceSelection.current.workspace.id)
+          .gte("created_at", monthStart),
+        admin
+          .from("generations")
+          .select(
+            "id, type, prompt, title, duration, aspect_ratio, created_at"
+          )
+          .eq("workspace_id", workspaceSelection.current.workspace.id)
+          .order("created_at", { ascending: false })
+          .limit(4),
+      ]);
+
+    totalGenerations = totalCount ?? 0;
+    monthGenerations = monthCount ?? 0;
+    recentGenerations = recent.data ?? [];
+  }
+
+  const timeSavedHours = Math.round((totalGenerations * 5) / 6) / 10;
+  let teamMembers = user ? 1 : 0;
+
+  if (user && workspaceSelection) {
+    const admin = createAdminClient();
+    const { count } = await admin
+      .from("workspace_members")
+      .select("id", { count: "exact", head: true })
+      .eq("workspace_id", workspaceSelection.current.workspace.id);
+
+    teamMembers = count ?? teamMembers;
+  }
+
+  const typeConfig = {
+    video: {
+      label: "Video",
+      typeClass: "bg-accent-indigo/10 text-[#a5b4fc]",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <polygon points="23 7 16 12 23 17 23 7" />
+          <rect x="1" y="5" width="15" height="14" rx="2" />
+        </svg>
+      ),
+      activityIcon: "🎬",
+    },
+    voice: {
+      label: "Voice",
+      typeClass: "bg-accent-purple/10 text-[#d8b4fe]",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+        </svg>
+      ),
+      activityIcon: "🎙️",
+    },
+    image: {
+      label: "Image",
+      typeClass: "bg-[#f97316]/10 text-[#fdba74]",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <polyline points="21 15 16 10 5 21" />
+        </svg>
+      ),
+      activityIcon: "🖼️",
+    },
+    script: {
+      label: "Script",
+      typeClass: "bg-accent-emerald/10 text-[#6ee7b7]",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+        </svg>
+      ),
+      activityIcon: "📝",
+    },
+  } as const;
+
+  const recentProjects = recentGenerations.map((generation) => {
+    const config = typeConfig[generation.type as keyof typeof typeConfig] ?? typeConfig.video;
+    const meta =
+      generation.type === "video"
+        ? generation.duration ?? "Video"
+        : generation.type === "image"
+        ? generation.aspect_ratio ?? "Image"
+        : generation.type === "script"
+        ? "Script"
+        : "Voice";
+
+    return {
+      id: generation.id,
+      name: truncateText(generation.title ?? generation.prompt, 36),
+      time: formatRelativeTime(generation.created_at),
+      meta,
+      type: config.label,
+      typeClass: config.typeClass,
+      icon: config.icon,
+    };
+  });
+
+  const recentActivity = recentGenerations.map((generation) => {
+    const config = typeConfig[generation.type as keyof typeof typeConfig] ?? typeConfig.video;
+    return {
+      id: generation.id,
+      action: `${config.label} generated`,
+      user: "You",
+      time: formatRelativeTime(generation.created_at),
+      icon: config.activityIcon,
+    };
+  });
   return (
     <div className="animate-fade-in">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold mb-1">Good morning, Marcus 👋</h1>
+          <h1 className="text-3xl font-bold mb-1">
+            Good morning, {displayName} 👋
+          </h1>
           <p className="text-text-secondary text-sm">
             Here's what's happening with your content today.
           </p>
@@ -123,9 +290,7 @@ export default function DashboardPage() {
         {[
           {
             label: "Generations this month",
-            value: "42",
-            trend: "+12%",
-            trendUp: true,
+            value: monthGenerations.toString(),
             icon: (
               <svg
                 viewBox="0 0 24 24"
@@ -141,9 +306,7 @@ export default function DashboardPage() {
           },
           {
             label: "Time saved",
-            value: "2.4h",
-            trend: "+8%",
-            trendUp: true,
+            value: `${timeSavedHours}h`,
             icon: (
               <svg
                 viewBox="0 0 24 24"
@@ -160,7 +323,7 @@ export default function DashboardPage() {
           },
           {
             label: "Projects created",
-            value: "24",
+            value: totalGenerations.toString(),
             icon: (
               <svg
                 viewBox="0 0 24 24"
@@ -176,7 +339,7 @@ export default function DashboardPage() {
           },
           {
             label: "Team members",
-            value: "4",
+            value: teamMembers.toString(),
             icon: (
               <svg
                 viewBox="0 0 24 24"
@@ -202,24 +365,6 @@ export default function DashboardPage() {
               >
                 <div className="w-5 h-5">{stat.icon}</div>
               </div>
-              {stat.trend && (
-                <span
-                  className={`flex items-center gap-1 text-[13px] font-medium ${
-                    stat.trendUp ? "text-accent-emerald" : "text-accent-red"
-                  }`}
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    className="w-4 h-4"
-                  >
-                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-                  </svg>
-                  {stat.trend}
-                </span>
-              )}
             </div>
             <div className="text-[28px] font-bold mb-1">{stat.value}</div>
             <div className="text-[13px] text-text-muted">{stat.label}</div>
@@ -240,83 +385,14 @@ export default function DashboardPage() {
             </a>
           </div>
           <div className="p-3 space-y-1">
-            {[
-              {
-                name: "Product Launch Video",
-                time: "2 hours ago",
-                meta: "30 sec",
-                type: "Video",
-                typeClass: "bg-accent-indigo/10 text-[#a5b4fc]",
-                icon: (
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <polygon points="23 7 16 12 23 17 23 7" />
-                    <rect x="1" y="5" width="15" height="14" rx="2" />
-                  </svg>
-                ),
-              },
-              {
-                name: "Podcast Intro Voiceover",
-                time: "5 hours ago",
-                meta: "1:20 min",
-                type: "Voice",
-                typeClass: "bg-accent-purple/10 text-[#d8b4fe]",
-                icon: (
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-                    <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                  </svg>
-                ),
-              },
-              {
-                name: "Social Media Posts",
-                time: "Yesterday",
-                meta: "5 images",
-                type: "Image",
-                typeClass: "bg-[#f97316]/10 text-[#fdba74]",
-                icon: (
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <rect x="3" y="3" width="18" height="18" rx="2" />
-                    <circle cx="8.5" cy="8.5" r="1.5" />
-                    <polyline points="21 15 16 10 5 21" />
-                  </svg>
-                ),
-              },
-              {
-                name: "Blog Post Outline",
-                time: "2 days ago",
-                meta: "850 words",
-                type: "Script",
-                typeClass: "bg-accent-emerald/10 text-[#6ee7b7]",
-                icon: (
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <polyline points="14 2 14 8 20 8" />
-                  </svg>
-                ),
-              },
-            ].map((project, i) => (
+            {recentProjects.length === 0 && (
+              <div className="p-4 text-sm text-text-muted">
+                No projects created yet.
+              </div>
+            )}
+            {recentProjects.map((project) => (
               <div
-                key={i}
+                key={project.id}
                 className="flex items-center gap-4 p-4 rounded-xl hover:bg-bg-tertiary transition-colors cursor-pointer group"
               >
                 <div className="w-16 h-12 rounded-lg bg-bg-tertiary group-hover:bg-bg-primary flex items-center justify-center flex-shrink-0 text-text-muted transition-colors">
@@ -359,62 +435,22 @@ export default function DashboardPage() {
             <h3 className="font-semibold">Activity</h3>
           </div>
           <div className="p-3 space-y-2">
-            {[
-              {
-                text: "Sarah created a new video",
-                time: "10 mins ago",
-                iconClass: "bg-accent-indigo/10 text-accent-indigo",
-                icon: (
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                     <polygon points="23 7 16 12 23 17 23 7" />
-                     <rect x="1" y="5" width="15" height="14" rx="2" />
-                  </svg>
-                ),
-              },
-              {
-                 text: "Mike invited 2 team members",
-                 time: "1 hour ago",
-                 iconClass: "bg-accent-blue/10 text-accent-blue",
-                 icon: (
-                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                 )
-              },
-              {
-                text: "David exported 5 images",
-                time: "3 hours ago",
-                iconClass: "bg-[#f97316]/10 text-[#f97316]",
-                icon: (
-                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                )
-              },
-               {
-                text: "Project X script updated",
-                time: "5 hours ago",
-                iconClass: "bg-accent-emerald/10 text-accent-emerald",
-                icon: (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                )
-              }
-            ].map((activity, i) => (
-              <div key={i} className="flex gap-3 p-3">
-                <div className={`w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0 ${activity.iconClass}`}>
-                  <div className="w-4.5 h-4.5">{activity.icon}</div>
+            {recentActivity.length === 0 && (
+              <div className="p-4 text-sm text-text-muted">
+                No recent activity yet.
+              </div>
+            )}
+            {recentActivity.map((activity) => (
+              <div key={activity.id} className="flex gap-3 p-3">
+                <div className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0 bg-bg-tertiary">
+                  <div className="text-lg">{activity.icon}</div>
                 </div>
                 <div>
-                   <p className="text-[13px] mb-0.5">
-                       {activity.text.split(' ').map((word, idx) => {
-                           if (['Sarah', 'Mike', 'David'].includes(word) || word === 'video' || word.includes('images') || word.includes('script') || word.includes('members')) {
-                               return <strong key={idx} className="font-semibold">{word} </strong>
-                           }
-                           return word + ' ';
-                       })}
-                   </p>
-                   <p className="text-xs text-text-muted">{activity.time}</p>
+                  <p className="text-[13px] mb-0.5">
+                    <strong className="font-semibold">{activity.user}</strong>{" "}
+                    {activity.action.toLowerCase()}
+                  </p>
+                  <p className="text-xs text-text-muted">{activity.time}</p>
                 </div>
               </div>
             ))}
