@@ -42,13 +42,6 @@ const handleCheckoutSessionCompleted = async (
     return;
   }
 
-  const currentPeriodEnd =
-    "current_period_end" in subscription &&
-    typeof (subscription as { current_period_end?: number }).current_period_end ===
-      "number"
-      ? (subscription as { current_period_end: number }).current_period_end
-      : null;
-
   const updates: Record<string, unknown> = {
     stripe_customer_id: session.customer ?? null,
     stripe_subscription_id: session.subscription ?? null,
@@ -77,6 +70,13 @@ const handleSubscriptionUpdate = async (
 
   const nextPlanKey =
     mapping?.planKey ?? (isCanceled || isExpired ? DEFAULT_PLAN_KEY : null);
+
+  const currentPeriodEnd =
+    "current_period_end" in subscription &&
+    typeof (subscription as { current_period_end?: number }).current_period_end ===
+      "number"
+      ? (subscription as { current_period_end: number }).current_period_end
+      : null;
 
   const updates: Record<string, unknown> = {
     stripe_customer_id: customerId,
