@@ -3,14 +3,20 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function SignupPage() {
+  const searchParams = useSearchParams();
+  const agencyWorkspaceId = searchParams.get("agency_workspace_id");
+  const agencyInviteId = searchParams.get("agency_invite_id");
+  const agencyPlan = searchParams.get("plan");
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
+    password: "",
+    confirmPassword: "",
     orgName: "",
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -44,7 +50,7 @@ export default function SignupPage() {
     }
   };
 
-  const handleSendOtp = async (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // If OTP is already sent, verify it
@@ -71,17 +77,30 @@ export default function SignupPage() {
       return;
     }
 
-    // Otherwise, send OTP
+    // Step 1: Create account with password
     if (step === 1) {
-      if (!formData.fullName || !formData.email) {
-        setError("Please fill in all fields");
+      if (!formData.fullName || !formData.email || !formData.password) {
+        setError("Please fill in all required fields");
         return;
       }
+
+      if (formData.password !== formData.confirmPassword) {
+        setError("Passwords do not match");
+        return;
+      }
+
+      if (formData.password.length < 6) {
+        setError("Password must be at least 6 characters");
+        return;
+      }
+
       setIsLoading(true);
       setError("");
 
-      const { error } = await supabase.auth.signInWithOtp({
+      // Sign up with email and password
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
+        password: formData.password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
           data: {
@@ -90,11 +109,26 @@ export default function SignupPage() {
         },
       });
 
-      if (error) {
-        setError(error.message);
+      if (signUpError) {
+        setError(signUpError.message);
+        setIsLoading(false);
+        return;
+      }
+
+      // Check if email confirmation is required
+      // If user is created but email is not confirmed, show OTP input
+      if (data.user && !data.session) {
+        // Email confirmation required - Supabase has already sent confirmation email
+        // Show OTP input form for user to verify their email
+        setIsOtpSent(true);
+        setIsLoading(false);
+      } else if (data.session) {
+        // User is already logged in (email confirmation disabled)
+        // Move to step 2
+        setStep(2);
         setIsLoading(false);
       } else {
-        setIsOtpSent(true);
+        setError("Failed to create account. Please try again.");
         setIsLoading(false);
       }
     }
@@ -105,17 +139,85 @@ export default function SignupPage() {
     setIsLoading(true);
     setError("");
 
+    if (!formData.orgName || formData.orgName.trim().length === 0) {
+      setError("Please enter a workspace name");
+      setIsLoading(false);
+      return;
+    }
+
     if (user) {
+      // If this is an agency invitation, accept it first
+      if ((agencyWorkspaceId || agencyInviteId) && agencyPlan) {
+        try {
+          const response = await fetch("/api/agency/accept-invitation", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+              ...(agencyWorkspaceId ? { workspace_id: agencyWorkspaceId } : {}),
+              ...(agencyInviteId ? { invite_id: agencyInviteId } : {}),
+              plan: agencyPlan,
+            }),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            setError(data?.error ?? "Failed to accept agency invitation");
+            setIsLoading(false);
+            return;
+          }
+
+          // Update profile with full name and workspace name
+          const { error: profileError } = await updateProfile({
+            full_name: formData.fullName,
+            org_name: formData.orgName.trim(),
+          });
+
+          if (profileError) {
+            setError(profileError);
+            setIsLoading(false);
+            return;
+          }
+
+          // Agency invitation handled, proceed to dashboard
+          router.push("/dashboard");
+          return;
+        } catch (error) {
+          setError("Failed to accept agency invitation. Please try again.");
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // Regular signup flow
+      // Update profile with full name and workspace name
       const { error: profileError } = await updateProfile({
         full_name: formData.fullName,
-        org_name: formData.orgName || null,
+        org_name: formData.orgName.trim(),
       });
 
       if (profileError) {
         setError(profileError);
         setIsLoading(false);
-      } else {
+        return;
+      }
+
+      // Create workspace with the provided name
+      try {
+        const response = await fetch("/api/team/ensure", { method: "POST" });
+        const data = await response.json();
+
+        if (!response.ok) {
+          setError(data?.error ?? "Failed to create workspace");
+          setIsLoading(false);
+          return;
+        }
+
+        // Workspace created successfully, proceed to onboarding
         router.push("/onboarding");
+      } catch (error) {
+        setError("Failed to create workspace. Please try again.");
+        setIsLoading(false);
       }
     } else {
       setError("Please verify your email first");
@@ -188,6 +290,13 @@ export default function SignupPage() {
 
         {step === 1 ? (
           <div className="animate-fade-in">
+            {(agencyWorkspaceId || agencyInviteId) && agencyPlan && (
+              <div className="mb-6 p-4 bg-accent-indigo/10 border border-accent-indigo/20 rounded-xl">
+                <p className="text-sm text-accent-indigo font-medium">
+                  🎉 You've been invited to join as a {agencyPlan === "starter" ? "Starter" : "Professional"} plan member!
+                </p>
+              </div>
+            )}
             <div className="mb-8">
               <h1 className="text-3xl font-bold mb-2">Create your account</h1>
               <p className="text-text-secondary">
@@ -252,7 +361,7 @@ export default function SignupPage() {
             </div>
 
             {!isOtpSent ? (
-              <form onSubmit={handleSendOtp} className="flex flex-col gap-6">
+              <form onSubmit={handleSignup} className="flex flex-col gap-6">
                 {error && (
                   <div className="flex items-center gap-2.5 p-3.5 bg-red-500/10 border border-red-500/20 rounded-xl text-red-300 text-sm">
                     <svg
@@ -304,6 +413,42 @@ export default function SignupPage() {
                   />
                 </div>
 
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-text-secondary">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) =>
+                      setFormData({ ...formData, password: e.target.value })
+                    }
+                    className="w-full px-4 py-3.5 bg-bg-secondary border border-border-color rounded-xl text-text-primary text-[15px] focus:outline-none focus:border-accent-indigo focus:ring-4 focus:ring-accent-indigo/10 transition-all placeholder:text-text-muted"
+                    placeholder="••••••••"
+                    required
+                    disabled={isLoading}
+                    minLength={6}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-text-secondary">
+                    Confirm Password
+                  </label>
+                  <input
+                    type="password"
+                    value={formData.confirmPassword}
+                    onChange={(e) =>
+                      setFormData({ ...formData, confirmPassword: e.target.value })
+                    }
+                    className="w-full px-4 py-3.5 bg-bg-secondary border border-border-color rounded-xl text-text-primary text-[15px] focus:outline-none focus:border-accent-indigo focus:ring-4 focus:ring-accent-indigo/10 transition-all placeholder:text-text-muted"
+                    placeholder="••••••••"
+                    required
+                    disabled={isLoading}
+                    minLength={6}
+                  />
+                </div>
+
                 <button
                   type="submit"
                   disabled={isLoading}
@@ -331,11 +476,11 @@ export default function SignupPage() {
                           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                         ></path>
                       </svg>
-                      Sending code...
+                      Creating account...
                     </>
                   ) : (
                     <>
-                      Continue
+                      Create Account
                       <svg
                         viewBox="0 0 24 24"
                         fill="none"
@@ -350,7 +495,7 @@ export default function SignupPage() {
                 </button>
               </form>
             ) : (
-              <form onSubmit={handleSendOtp} className="flex flex-col gap-6">
+              <form onSubmit={handleSignup} className="flex flex-col gap-6">
                 {/* OTP Verification Form - this will be shown when isOtpSent is true */}
                 {/* The actual verification happens in handleSendOtp when step === 2 */}
                 {error && (
@@ -375,6 +520,9 @@ export default function SignupPage() {
                     We sent a verification code to
                   </p>
                   <p className="font-medium text-white">{formData.email}</p>
+                  <p className="text-text-muted text-xs mt-2">
+                    Please check your email and enter the 8-digit code to verify your account.
+                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -384,18 +532,18 @@ export default function SignupPage() {
                   <input
                     type="text"
                     value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 8))}
                     className="w-full px-4 py-3.5 bg-bg-secondary border border-border-color rounded-xl text-text-primary text-[15px] focus:outline-none focus:border-accent-indigo focus:ring-4 focus:ring-accent-indigo/10 transition-all placeholder:text-text-muted text-center text-2xl tracking-widest font-mono"
-                    placeholder="000000"
+                    placeholder="00000000"
                     required
                     disabled={isLoading}
-                    maxLength={6}
+                    maxLength={8}
                   />
                 </div>
 
                 <button
                   type="submit"
-                  disabled={isLoading || otp.length !== 6}
+                  disabled={isLoading || otp.length !== 8}
                   className="w-full py-4 bg-gradient-to-r from-accent-indigo to-accent-purple text-white rounded-xl font-bold text-base transition-all hover:shadow-[0_8px_30px_rgba(99,102,241,0.4)] hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
                 >
                   {isLoading ? (
@@ -438,17 +586,46 @@ export default function SignupPage() {
                   )}
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsOtpSent(false);
-                    setOtp("");
-                    setError("");
-                  }}
-                  className="text-sm font-medium text-accent-indigo hover:underline text-center"
-                >
-                  Use a different email
-                </button>
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setIsLoading(true);
+                      setError("");
+                      const { error: resendError } = await supabase.auth.signInWithOtp({
+                        email: formData.email,
+                        options: {
+                          shouldCreateUser: false,
+                        },
+                      });
+                      if (resendError) {
+                        setError(resendError.message);
+                      } else {
+                        setError("");
+                        // Show success message briefly
+                        const successMsg = "Verification code resent! Please check your email.";
+                        setError(successMsg);
+                        setTimeout(() => setError(""), 3000);
+                      }
+                      setIsLoading(false);
+                    }}
+                    disabled={isLoading}
+                    className="text-sm font-medium text-accent-indigo hover:underline text-center disabled:opacity-50"
+                  >
+                    Resend verification code
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsOtpSent(false);
+                      setOtp("");
+                      setError("");
+                    }}
+                    className="text-sm font-medium text-accent-indigo hover:underline text-center"
+                  >
+                    Use a different email
+                  </button>
+                </div>
               </form>
             )}
           </div>
@@ -457,7 +634,7 @@ export default function SignupPage() {
             <div className="mb-8">
               <h1 className="text-3xl font-bold mb-2">Set up your workspace</h1>
               <p className="text-text-secondary">
-                Create a workspace for your team
+                Give your workspace a name to get started
               </p>
             </div>
 
@@ -481,7 +658,7 @@ export default function SignupPage() {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-text-secondary">
-                  Workspace name
+                  Workspace Name <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
@@ -490,10 +667,14 @@ export default function SignupPage() {
                     setFormData({ ...formData, orgName: e.target.value })
                   }
                   className="w-full px-4 py-3.5 bg-bg-secondary border border-border-color rounded-xl text-text-primary text-[15px] focus:outline-none focus:border-accent-indigo focus:ring-4 focus:ring-accent-indigo/10 transition-all placeholder:text-text-muted"
-                  placeholder="My Company"
+                  placeholder="Enter your workspace name"
                   required
                   disabled={isLoading}
+                  minLength={1}
                 />
+                <p className="text-xs text-text-muted">
+                  This will be the name of your workspace. You can change it later in settings.
+                </p>
               </div>
 
               <div className="flex items-start gap-3">

@@ -22,7 +22,7 @@ export async function GET() {
     const admin = createAdminClient();
     const { data: invites, error: inviteError } = await admin
       .from("workspace_invites")
-      .select("id, workspace_id, role, invited_by, created_at")
+      .select("id, workspace_id, role, invited_by, created_at, is_agency_sub_account, sub_account_plan")
       .eq("email", email)
       .eq("status", "pending")
       .order("created_at", { ascending: false });
@@ -35,17 +35,27 @@ export async function GET() {
       return NextResponse.json({ invites: [] });
     }
 
-    const workspaceIds = invites.map((invite) => invite.workspace_id);
-    const inviterIds = invites
+    // Filter out invites with null workspace_id that aren't agency sub-accounts
+    // (agency sub-accounts can have null workspace_id - workspace created on acceptance)
+    const validInvites = invites.filter(
+      (invite) => invite.workspace_id || invite.is_agency_sub_account
+    );
+
+    const workspaceIds = validInvites
+      .map((invite) => invite.workspace_id)
+      .filter(Boolean) as string[];
+    const inviterIds = validInvites
       .map((invite) => invite.invited_by)
       .filter(Boolean) as string[];
 
     const [{ data: workspaces, error: workspaceError }, { data: inviters }] =
       await Promise.all([
-        admin
-          .from("workspaces")
-          .select("id, name, owner_id")
-          .in("id", workspaceIds),
+        workspaceIds.length > 0
+          ? admin
+              .from("workspaces")
+              .select("id, name, owner_id")
+              .in("id", workspaceIds)
+          : Promise.resolve({ data: [] }),
         inviterIds.length
           ? admin
               .from("profiles")
@@ -65,12 +75,23 @@ export async function GET() {
       (inviters ?? []).map((profile) => [profile.id, profile])
     );
 
-    const formattedInvites = invites
+    const formattedInvites = validInvites
       .map((invite) => {
-        const workspace = workspaceMap.get(invite.workspace_id);
-        if (!workspace) {
+        const workspace = invite.workspace_id
+          ? workspaceMap.get(invite.workspace_id)
+          : null;
+        
+        // For agency sub-accounts without workspace, create a placeholder
+        const workspaceName = workspace
+          ? workspace.name ?? "Workspace"
+          : invite.is_agency_sub_account
+          ? `Agency Workspace (${invite.sub_account_plan ?? "Unknown"} Plan)`
+          : null;
+
+        if (!workspaceName) {
           return null;
         }
+
         const inviter = invite.invited_by
           ? inviterMap.get(invite.invited_by)
           : null;
@@ -85,11 +106,13 @@ export async function GET() {
           role: invite.role,
           createdAt: invite.created_at ?? null,
           workspace: {
-            id: workspace.id,
-            name: workspace.name ?? "Workspace",
-            ownerId: workspace.owner_id,
+            id: workspace?.id ?? null,
+            name: workspaceName,
+            ownerId: workspace?.owner_id ?? null,
           },
           invitedBy: inviterName,
+          isAgencySubAccount: invite.is_agency_sub_account ?? false,
+          subAccountPlan: invite.sub_account_plan ?? null,
         };
       })
       .filter(Boolean);
