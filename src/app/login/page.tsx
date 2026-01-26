@@ -8,6 +8,8 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loginMethod, setLoginMethod] = useState<"password" | "otp">("password");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [isOtpSent, setIsOtpSent] = useState(false);
@@ -39,10 +41,43 @@ export default function LoginPage() {
     }
   };
 
+  const handlePasswordLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+
+    if (!email || !password) {
+      setError("Please enter both email and password");
+      setIsLoading(false);
+      return;
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      setError(error.message);
+      setIsLoading(false);
+    } else if (data.session) {
+      router.push("/dashboard");
+    } else {
+      setError("Failed to sign in. Please try again.");
+      setIsLoading(false);
+    }
+  };
+
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
+
+    if (!email) {
+      setError("Please enter your email address");
+      setIsLoading(false);
+      return;
+    }
 
     const { error } = await supabase.auth.signInWithOtp({
       email,
@@ -161,7 +196,145 @@ export default function LoginPage() {
           <div className="flex-1 h-px bg-border-color"></div>
         </div>
 
-        {!isOtpSent ? (
+        {/* Login Method Toggle */}
+        <div className="flex gap-2 mb-6 p-1 bg-bg-secondary rounded-xl">
+          <button
+            type="button"
+            onClick={() => {
+              setLoginMethod("password");
+              setIsOtpSent(false);
+              setError("");
+            }}
+            className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+              loginMethod === "password"
+                ? "bg-accent-indigo text-white"
+                : "text-text-secondary hover:text-text-primary"
+            }`}
+          >
+            Password
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setLoginMethod("otp");
+              setIsOtpSent(false);
+              setError("");
+            }}
+            className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+              loginMethod === "otp"
+                ? "bg-accent-indigo text-white"
+                : "text-text-secondary hover:text-text-primary"
+            }`}
+          >
+            OTP Code
+          </button>
+        </div>
+
+        {loginMethod === "password" && !isOtpSent ? (
+          <form onSubmit={handlePasswordLogin} className="flex flex-col gap-6">
+            {error && (
+              <div className="flex items-center gap-2.5 p-3.5 bg-red-500/10 border border-red-500/20 rounded-xl text-red-300 text-sm">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="w-5 h-5 flex-shrink-0"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                {error}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-text-secondary">
+                Email address
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3.5 bg-bg-secondary border border-border-color rounded-xl text-text-primary text-[15px] focus:outline-none focus:border-accent-indigo focus:ring-4 focus:ring-accent-indigo/10 transition-all placeholder:text-text-muted"
+                placeholder="you@company.com"
+                required
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-text-secondary">
+                Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3.5 bg-bg-secondary border border-border-color rounded-xl text-text-primary text-[15px] focus:outline-none focus:border-accent-indigo focus:ring-4 focus:ring-accent-indigo/10 transition-all placeholder:text-text-muted"
+                placeholder="••••••••"
+                required
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div></div>
+              <Link
+                href="/forgot-password"
+                className="text-sm font-medium text-accent-indigo hover:underline"
+              >
+                Forgot password?
+              </Link>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-4 bg-gradient-to-r from-accent-indigo to-accent-purple text-white rounded-xl font-bold text-base transition-all hover:shadow-[0_8px_30px_rgba(99,102,241,0.4)] hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
+            >
+              {isLoading ? (
+                <>
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Signing in...
+                </>
+              ) : (
+                <>
+                  Sign In
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="w-5 h-5"
+                  >
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                  </svg>
+                </>
+              )}
+            </button>
+          </form>
+        ) : !isOtpSent ? (
           <form onSubmit={handleSendOtp} className="flex flex-col gap-6">
             {error && (
               <div className="flex items-center gap-2.5 p-3.5 bg-red-500/10 border border-red-500/20 rounded-xl text-red-300 text-sm">
@@ -236,7 +409,7 @@ export default function LoginPage() {
                 </>
               ) : (
                 <>
-                  Send Magic Link
+                  Send OTP Code
                   <svg
                     viewBox="0 0 24 24"
                     fill="none"
@@ -283,18 +456,18 @@ export default function LoginPage() {
               <input
                 type="text"
                 value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 8))}
                 className="w-full px-4 py-3.5 bg-bg-secondary border border-border-color rounded-xl text-text-primary text-[15px] focus:outline-none focus:border-accent-indigo focus:ring-4 focus:ring-accent-indigo/10 transition-all placeholder:text-text-muted text-center text-2xl tracking-widest font-mono"
-                placeholder="000000"
+                placeholder="00000000"
                 required
                 disabled={isLoading}
-                maxLength={6}
+                maxLength={8}
               />
             </div>
 
             <button
               type="submit"
-              disabled={isLoading || otp.length !== 6}
+              disabled={isLoading || otp.length !== 8}
               className="w-full py-4 bg-gradient-to-r from-accent-indigo to-accent-purple text-white rounded-xl font-bold text-base transition-all hover:shadow-[0_8px_30px_rgba(99,102,241,0.4)] hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
             >
               {isLoading ? (

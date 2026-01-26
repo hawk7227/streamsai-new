@@ -109,11 +109,20 @@ export async function GET() {
     const pendingCount = pendingInvites.length;
     const totalCount = activeCount + pendingCount;
 
+    // Get workspace details including agency info
+    const { data: workspaceDetails } = await admin
+      .from("workspaces")
+      .select("id, is_agency_sub_account, agency_user_id")
+      .eq("id", membership.workspace.id)
+      .maybeSingle();
+
     return NextResponse.json({
       role: membership.role,
       workspace: membership.workspace,
       plan: selection.plan,
       currentWorkspaceId: membership.workspace.id,
+      isClientWorkspace: workspaceDetails?.is_agency_sub_account === true && workspaceDetails?.agency_user_id === user.id,
+      agencyUserId: workspaceDetails?.agency_user_id ?? null,
       counts: {
         active: activeCount,
         pending: pendingCount,

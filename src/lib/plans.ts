@@ -11,6 +11,11 @@ export interface PlanLimits {
   prioritySupport: boolean;
 }
 
+export interface AgencyLimits {
+  starterSubAccounts: number;
+  professionalSubAccounts: number;
+}
+
 export interface PlanConfig {
   key: PlanKey;
   name: string;
@@ -25,6 +30,7 @@ export interface PlanConfig {
   limits: PlanLimits;
   isPopular?: boolean;
   badge?: string;
+  agencyLimits?: AgencyLimits;
 }
 
 export const DEFAULT_PLAN_KEY: PlanKey = "free";
@@ -107,7 +113,7 @@ export const PLAN_CONFIGS: Record<PlanKey, PlanConfig> = {
     description: "For organizations",
     cta: "Contact Sales",
     ctaHref: "#",
-    prices: { monthly: null, yearly: null },
+    prices: { monthly: 499, yearly: null },
     features: [
       "Unlimited generations",
       "4K resolution",
@@ -115,6 +121,7 @@ export const PLAN_CONFIGS: Record<PlanKey, PlanConfig> = {
       "Unlimited team members",
       "Custom branding",
       "SSO & dedicated support",
+      "Agency dashboard with sub-accounts",
     ],
     limits: {
       generationsPerMonth: "unlimited",
@@ -123,6 +130,10 @@ export const PLAN_CONFIGS: Record<PlanKey, PlanConfig> = {
       teamMembers: "unlimited",
       apiAccess: true,
       prioritySupport: true,
+    },
+    agencyLimits: {
+      starterSubAccounts: 5,
+      professionalSubAccounts: 2,
     },
   },
 };
@@ -146,4 +157,8 @@ export function getPlanConfig(planKey?: string | null): PlanConfig {
 
 export function getPlanLimits(planKey?: string | null): PlanLimits {
   return getPlanConfig(planKey).limits;
+}
+
+export function getAgencyLimits(planKey?: string | null): AgencyLimits | null {
+  return getPlanConfig(planKey).agencyLimits ?? null;
 }

@@ -4,7 +4,7 @@ export default function Footer() {
   return (
     <footer className="py-20 border-t border-border-color bg-bg-primary">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-12 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-16">
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-gradient-to-br from-accent-indigo to-accent-purple rounded-xl flex items-center justify-center text-white">
@@ -71,62 +71,6 @@ export default function Footer() {
                   Pricing
                 </Link>
               </li>
-              <li>
-                <Link
-                  href="#"
-                  className="text-text-secondary hover:text-white text-sm transition-colors"
-                >
-                  API
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
-                  className="text-text-secondary hover:text-white text-sm transition-colors"
-                >
-                  Integration
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-sm font-semibold uppercase tracking-wider text-text-muted mb-5">
-              Resources
-            </h4>
-            <ul className="space-y-3">
-              <li>
-                <Link
-                  href="#"
-                  className="text-text-secondary hover:text-white text-sm transition-colors"
-                >
-                  Documentation
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
-                  className="text-text-secondary hover:text-white text-sm transition-colors"
-                >
-                  Guides
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
-                  className="text-text-secondary hover:text-white text-sm transition-colors"
-                >
-                  Community
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
-                  className="text-text-secondary hover:text-white text-sm transition-colors"
-                >
-                  Blog
-                </Link>
-              </li>
             </ul>
           </div>
 
@@ -137,7 +81,7 @@ export default function Footer() {
             <ul className="space-y-3">
               <li>
                 <Link
-                  href="#"
+                  href="/about"
                   className="text-text-secondary hover:text-white text-sm transition-colors"
                 >
                   About
@@ -145,7 +89,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="#"
+                  href="/careers"
                   className="text-text-secondary hover:text-white text-sm transition-colors"
                 >
                   Careers
@@ -153,7 +97,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="#"
+                  href="/legal"
                   className="text-text-secondary hover:text-white text-sm transition-colors"
                 >
                   Legal
@@ -161,7 +105,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="#"
+                  href="/privacy"
                   className="text-text-secondary hover:text-white text-sm transition-colors"
                 >
                   Privacy
@@ -177,7 +121,7 @@ export default function Footer() {
             <ul className="space-y-3">
               <li>
                 <Link
-                  href="#"
+                  href="/help-center"
                   className="text-text-secondary hover:text-white text-sm transition-colors"
                 >
                   Help Center
@@ -185,15 +129,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="#"
-                  className="text-text-secondary hover:text-white text-sm transition-colors"
-                >
-                  Status
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
+                  href="/contact"
                   className="text-text-secondary hover:text-white text-sm transition-colors"
                 >
                   Contact
@@ -209,19 +145,19 @@ export default function Footer() {
           </p>
           <div className="flex gap-6">
             <Link
-              href="#"
+              href="/terms"
               className="text-text-muted hover:text-white text-sm transition-colors"
             >
               Terms
             </Link>
             <Link
-              href="#"
+              href="/privacy"
               className="text-text-muted hover:text-white text-sm transition-colors"
             >
               Privacy
             </Link>
             <Link
-              href="#"
+              href="/cookies"
               className="text-text-muted hover:text-white text-sm transition-colors"
             >
               Cookies

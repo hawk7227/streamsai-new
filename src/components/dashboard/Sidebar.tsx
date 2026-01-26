@@ -247,8 +247,7 @@ export default function Sidebar({
                   icon: (
                    <path d="M3 21h18M5 21V7l8-4 8 4v14M8 21v-14l6-3 6 3v14" />
                   ),
-                   // Using simple building icon for now as agency icon wasn't clear in list
-                   // Actually agency isn't in main list, but I adding it for nav
+                  requiresAgencyPlan: true,
                 },
                 {
                   name: "Analytics",
@@ -261,7 +260,15 @@ export default function Sidebar({
                     </>
                   ),
                 },
-              ].map((item) => (
+              ]
+              .filter((item) => {
+                // Hide Agency if user doesn't have agency plan (enterprise)
+                if (item.requiresAgencyPlan) {
+                  return currentPlanKey === "enterprise";
+                }
+                return true;
+              })
+              .map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
