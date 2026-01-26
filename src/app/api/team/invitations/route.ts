@@ -48,21 +48,23 @@ export async function GET() {
       .map((invite) => invite.invited_by)
       .filter(Boolean) as string[];
 
-    const [{ data: workspaces, error: workspaceError }, { data: inviters }] =
-      await Promise.all([
-        workspaceIds.length > 0
-          ? admin
-              .from("workspaces")
-              .select("id, name, owner_id")
-              .in("id", workspaceIds)
-          : Promise.resolve({ data: [] }),
-        inviterIds.length
-          ? admin
-              .from("profiles")
-              .select("id, full_name, email")
-              .in("id", inviterIds)
-          : Promise.resolve({ data: [] }),
-      ]);
+    const [workspacesResult, invitersResult] = await Promise.all([
+      workspaceIds.length > 0
+        ? admin
+            .from("workspaces")
+            .select("id, name, owner_id")
+            .in("id", workspaceIds)
+        : Promise.resolve({ data: [], error: null }),
+      inviterIds.length
+        ? admin
+            .from("profiles")
+            .select("id, full_name, email")
+            .in("id", inviterIds)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+
+    const { data: workspaces, error: workspaceError } = workspacesResult;
+    const { data: inviters } = invitersResult;
 
     if (workspaceError) {
       return NextResponse.json({ error: workspaceError.message }, { status: 500 });
