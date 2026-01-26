@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
-export default function SignupPage() {
+function SignupForm() {
   const searchParams = useSearchParams();
   const agencyWorkspaceId = searchParams.get("agency_workspace_id");
   const agencyInviteId = searchParams.get("agency_invite_id");
@@ -854,5 +854,22 @@ export default function SignupPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen bg-bg-primary text-text-primary font-sans items-center justify-center">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-accent-indigo border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-text-secondary">Loading...</p>
+          </div>
+        </div>
+      }
+    >
+      <SignupForm />
+    </Suspense>
   );
 }
