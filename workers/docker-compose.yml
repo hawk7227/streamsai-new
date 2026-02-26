@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  worker-image:
+    build:
+      context: ..
+      dockerfile: workers/Dockerfile
+    environment:
+      - TOOL_TYPE=image
+      - MAX_CONCURRENT=5
+      - POLL_INTERVAL_MS=2000
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    restart: unless-stopped
+
+  worker-video:
+    build:
+      context: ..
+      dockerfile: workers/Dockerfile
+    environment:
+      - TOOL_TYPE=video
+      - MAX_CONCURRENT=3
+      - POLL_INTERVAL_MS=3000
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GOOGLE_AI_API_KEY=${GOOGLE_AI_API_KEY}
+      - WEBHOOK_BASE_URL=${WEBHOOK_BASE_URL}
+    restart: unless-stopped
+
+  worker-voice:
+    build:
+      context: ..
+      dockerfile: workers/Dockerfile
+    environment:
+      - TOOL_TYPE=voice
+      - MAX_CONCURRENT=5
+      - POLL_INTERVAL_MS=2000
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
+    restart: unless-stopped
+
+  worker-script:
+    build:
+      context: ..
+      dockerfile: workers/Dockerfile
+    environment:
+      - TOOL_TYPE=script
+      - MAX_CONCURRENT=8
+      - POLL_INTERVAL_MS=1500
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    restart: unless-stopped
