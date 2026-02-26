@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createServerSupabaseClient, createServiceClient } from '@/lib/supabase/server';
-import { resolveProvider } from '@/lib/providers/registry';
+import { resolveProvider, resolveProvidersBatch } from '@/lib/providers/registry';
 import type {
   ToolType,
   QualityTier,
@@ -343,10 +343,12 @@ async function buildGenerationsList(
   const generations: Array<Omit<Generation, 'created_at' | 'batch_id'> & { id: string }> = [];
   const prompts = input.prompts && input.prompts.length > 0 ? input.prompts : [input.prompt];
 
+  // SINGLE DB query for all tiers (fixes N+1 sequential bottleneck)
+  const resolvedProviders = await resolveProvidersBatch(input.type, input.quality_tiers);
+
   for (const prompt of prompts) {
     for (const tier of input.quality_tiers) {
-      // Resolve provider for this tool_type + tier
-      const resolved = await resolveProvider(input.type, tier);
+      const resolved = resolvedProviders.get(tier);
       if (!resolved) continue;
 
       const { mapping } = resolved;
