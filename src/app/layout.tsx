@@ -1,17 +1,9 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/contexts/AuthContext";
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
-  title: "StreamsAI - Create Stunning Content with AI",
-  description: "Transform your ideas into stunning videos, images, voiceovers, and scripts with AI. One platform, unlimited creativity.",
+  title: "StreamsAI — AI Content Generation Platform",
+  description: "Create stunning videos, images, voiceovers, and scripts with AI. One platform, unlimited creativity.",
 };
 
 export default function RootLayout({
@@ -21,12 +13,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${inter.variable} antialiased`}
-      >
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+      <body className="antialiased">
+        {children}
       </body>
     </html>
   );

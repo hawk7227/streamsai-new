@@ -1,49 +1,15 @@
-"use client";
-
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
-import Hero from "@/components/home/Hero";
-import Features from "@/components/home/Features";
-import Products from "@/components/home/Products";
-import Testimonials from "@/components/home/Testimonials";
-import CTA from "@/components/home/CTA";
-
 export default function Home() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!loading && user) {
-      router.push("/dashboard");
-    }
-  }, [user, loading, router]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-bg-primary flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent-indigo"></div>
-      </div>
-    );
-  }
-
-  if (user) {
-    return null; // Will redirect
-  }
-
   return (
-    <>
-      <Navbar />
-      <main>
-        <Hero />
-        <Features />
-        <Products />
-        <Testimonials />
-        <CTA />
-      </main>
-      <Footer />
-    </>
+    <main style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', fontFamily: 'system-ui, sans-serif', background: '#0a0a0f', color: '#f5f5f7' }}>
+      <h1 style={{ fontSize: '3rem', fontWeight: 700, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+        StreamsAI
+      </h1>
+      <p style={{ color: '#a0a0b0', marginTop: '0.5rem', fontSize: '1.1rem' }}>
+        Enterprise AI Content Generation Platform
+      </p>
+      <p style={{ color: '#6b6b7b', marginTop: '2rem', fontSize: '0.85rem' }}>
+        API ready at /api/generations
+      </p>
+    </main>
   );
 }
