@@ -116,6 +116,9 @@ export interface ProviderStatusResult {
   progress?: number; resultUrl?: string; error?: string;
 }
 
+// Alias for backward compatibility
+export type PollStatusResult = ProviderStatusResult;
+
 export interface MediaProvider {
   readonly id: string;
   readonly name: string;
