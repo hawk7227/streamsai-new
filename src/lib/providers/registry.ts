@@ -50,3 +50,53 @@ export async function resolveProvider(toolType: ToolType, qualityTier: QualityTi
   if (!adapter) return null;
   return { adapter, mapping };
 }
+
+// Batch resolve — single DB query for multiple tiers (fixes N+1 sequential bottleneck)
+export async function resolveProvidersBatch(
+  toolType: ToolType,
+  qualityTiers: QualityTier[],
+): Promise<Map<QualityTier, { adapter: MediaProvider; mapping: ProviderMapping }>> {
+  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+  const { data, error } = await supabase
+    .from('provider_mappings')
+    .select('*')
+    .eq('tool_type', toolType)
+    .in('quality_tier', qualityTiers)
+    .eq('is_active', true)
+    .order('priority', { ascending: true });
+
+  const results = new Map<QualityTier, { adapter: MediaProvider; mapping: ProviderMapping }>();
+  if (error || !data) return results;
+
+  // Pick best (lowest priority number) per tier
+  for (const tier of qualityTiers) {
+    const mapping = (data as ProviderMapping[]).find(m => m.quality_tier === tier);
+    if (!mapping) continue;
+    const adapter = ADAPTERS[mapping.provider_key];
+    if (!adapter) continue;
+    results.set(tier, { adapter, mapping });
+  }
+  return results;
+}
+
+// Direct adapter lookup by provider_key (used by worker)
+export function getAdapterByKey(providerKey: string): { adapter: MediaProvider; mapping: ProviderMapping } | null {
+  const adapter = ADAPTERS[providerKey];
+  if (!adapter) return null;
+  // Return with a minimal mapping — worker already has the full generation row
+  return {
+    adapter,
+    mapping: {
+      id: '', tool_type: 'image' as ToolType, quality_tier: 'standard' as QualityTier,
+      provider_key: providerKey, display_name: adapter.name,
+      preview_cost_credits: 0, final_cost_credits: 0,
+      is_active: true, priority: 1, max_concurrent: 5, requests_per_minute: 30,
+      config: {},
+    },
+  };
+}
+
+// Get raw adapter (simplest form)
+export function getAdapter(providerKey: string): MediaProvider | null {
+  return ADAPTERS[providerKey] || null;
+}
