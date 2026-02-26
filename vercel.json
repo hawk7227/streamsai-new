@@ -1,0 +1,22 @@
+{
+  "crons": [
+    {
+      "path": "/api/workers/process",
+      "schedule": "* * * * *"
+    }
+  ],
+  "functions": {
+    "src/app/api/workers/process/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/generations/route.ts": {
+      "maxDuration": 30
+    },
+    "src/app/api/pipelines/[id]/execute/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/copilot/route.ts": {
+      "maxDuration": 30
+    }
+  }
+}
