@@ -7,7 +7,8 @@ import { getStripePriceId, type BillingInterval } from "@/lib/stripe/prices";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
+  try {
+    const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -84,4 +85,8 @@ export async function POST(request: Request) {
   });
 
   return NextResponse.json({ url: session.url });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Checkout failed';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

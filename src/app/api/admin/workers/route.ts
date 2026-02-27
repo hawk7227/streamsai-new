@@ -6,7 +6,8 @@ import { createServiceClient } from '@/lib/supabase/server';
  * Returns worker health status, active job counts, and queue depth.
  */
 export async function GET(): Promise<NextResponse> {
-  const supabase = createServiceClient();
+  try {
+    const supabase = createServiceClient();
 
   const twoMinutesAgo = new Date(Date.now() - 120_000).toISOString();
 
@@ -68,4 +69,8 @@ export async function GET(): Promise<NextResponse> {
     total_running: (activeWorkers ?? []).length,
     timestamp: new Date().toISOString(),
   });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

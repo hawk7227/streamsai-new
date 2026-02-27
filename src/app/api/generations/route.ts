@@ -16,7 +16,7 @@ import { v4 as uuidv4 } from 'uuid';
 // ---------------------------------------------------------------------------
 
 const CreateGenerationSchema = z.object({
-  type: z.enum(['image', 'video', 'voice', 'script']),
+  type: z.enum(['image', 'video', 'voice', 'script', 'image_to_video', 'video_to_video', 'avatar', 'edit']),
   prompt: z.string().min(1).max(2000),
   negative_prompt: z.string().max(500).optional(),
   quality_tiers: z.array(z.enum(['standard', 'premium', 'ultra'])).min(1).max(3),
@@ -26,6 +26,10 @@ const CreateGenerationSchema = z.object({
   style: z.string().optional(),
   voice_id: z.string().optional(),
   language: z.string().optional(),
+  reference_image_url: z.string().url().optional(),
+  reference_video_url: z.string().url().optional(),
+  reference_audio_url: z.string().url().optional(),
+  overlay_config: z.record(z.string(), z.unknown()).optional(),
   batch_mode: z.enum(['single', 'multi_provider', 'bulk', 'multi_both']).optional(),
   prompts: z.array(z.string().min(1).max(2000)).max(10).optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
@@ -36,9 +40,9 @@ const CreateGenerationSchema = z.object({
 // ---------------------------------------------------------------------------
 
 const CONCURRENCY_MAP: Record<string, Record<ToolType, number>> = {
-  free:       { image: 3,  video: 1,  voice: 2,  script: 5 },
-  pro:        { image: 10, video: 5,  voice: 8,  script: 15 },
-  enterprise: { image: 30, video: 15, voice: 20, script: 50 },
+  free:       { image: 3,  video: 1,  voice: 2,  script: 5,  image_to_video: 1, video_to_video: 1, avatar: 1, edit: 2 },
+  pro:        { image: 10, video: 5,  voice: 8,  script: 15, image_to_video: 3, video_to_video: 3, avatar: 3, edit: 5 },
+  enterprise: { image: 30, video: 15, voice: 20, script: 50, image_to_video: 10, video_to_video: 10, avatar: 10, edit: 15 },
 };
 
 const TOTAL_CONCURRENT_MAP: Record<string, number> = {
@@ -368,6 +372,10 @@ async function buildGenerationsList(
         style: input.style ?? null,
         voice_id: input.voice_id ?? null,
         language: input.language ?? null,
+        reference_image_url: input.reference_image_url ?? null,
+        reference_video_url: input.reference_video_url ?? null,
+        reference_audio_url: input.reference_audio_url ?? null,
+        overlay_config: input.overlay_config ?? null,
         status: 'queued',
         progress: 0,
         error_message: null,
@@ -456,6 +464,10 @@ function estimateGenerationTime(toolType: ToolType, tier: QualityTier): number {
     video:  { standard: 60, premium: 120, ultra: 180 },
     voice:  { standard: 8,  premium: 12, ultra: 15 },
     script: { standard: 3,  premium: 5,  ultra: 8 },
+    image_to_video: { standard: 45, premium: 90, ultra: 150 },
+    video_to_video: { standard: 60, premium: 120, ultra: 180 },
+    avatar: { standard: 30, premium: 60, ultra: 90 },
+    edit:   { standard: 15, premium: 30, ultra: 45 },
   };
   return estimates[toolType]?.[tier] ?? 30;
 }

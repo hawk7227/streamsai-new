@@ -5,7 +5,7 @@
  * Processes queued generations in parallel, recovers stale jobs.
  * 
  * Vercel Cron config (vercel.json):
- * { "crons": [{ "path": "/api/workers/process", "schedule": "*/1 * * * *" }] }
+ * { "crons": [{ "path": "/api/workers/process", "schedule": "every 1 minute" }] }
  * 
  * Note: Vercel Cron minimum is 1 minute. For sub-minute polling,
  * the cron triggers once per minute and the endpoint self-loops for ~55s.
