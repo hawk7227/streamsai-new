@@ -5,11 +5,7 @@ import { getCurrentWorkspaceSelection } from "@/lib/team-server";
 import { formatRelativeTime, truncateText } from "@/lib/formatters";
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  let user = null;
   let displayName = "there";
   let monthGenerations = 0;
   let totalGenerations = 0;
@@ -27,8 +23,17 @@ export default async function DashboardPage() {
     ReturnType<typeof getCurrentWorkspaceSelection>
   > | null = null;
 
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase.auth.getUser();
+    user = data?.user ?? null;
+  } catch {
+    // No authenticated user — continue with defaults
+  }
+
   if (user) {
-    const { data: profile } = await supabase
+    const admin = createAdminClient();
+    const { data: profile } = await admin
       .from("profiles")
       .select("full_name, email")
       .eq("id", user.id)
@@ -40,7 +45,6 @@ export default async function DashboardPage() {
       user.email?.split("@")[0] ??
       "there";
 
-    const admin = createAdminClient();
     workspaceSelection = await getCurrentWorkspaceSelection(admin, user);
     const now = new Date();
     const monthStart = new Date(
