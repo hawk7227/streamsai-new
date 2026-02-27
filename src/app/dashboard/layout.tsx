@@ -14,11 +14,12 @@ export default function DashboardLayout({
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push("/login");
-    }
-  }, [user, loading, router]);
+  // AUTH BYPASS FOR TESTING — remove when going to production
+  // useEffect(() => {
+  //   if (!loading && !user) {
+  //     router.push("/login");
+  //   }
+  // }, [user, loading, router]);
 
   if (loading) {
     return (
@@ -28,14 +29,15 @@ export default function DashboardLayout({
     );
   }
 
-  if (!user) {
-    return null; // Will redirect
-  }
+  // AUTH BYPASS FOR TESTING — remove when going to production
+  // if (!user) {
+  //   return null; // Will redirect
+  // }
 
-  const userInitials = user.email
+  const userInitials = user?.email
     ?.split("@")[0]
     .slice(0, 2)
-    .toUpperCase() || "U";
+    .toUpperCase() || "T";
 
   return (
     <div className="flex min-h-screen bg-bg-primary text-text-primary font-sans">
