@@ -91,12 +91,7 @@ export function getAdapterByKey(providerKey: string): { adapter: MediaProvider; 
       provider_key: providerKey, display_name: adapter.name,
       preview_cost_credits: 0, final_cost_credits: 0,
       is_active: true, priority: 1, max_concurrent: 5, requests_per_minute: 30,
-      config: {},
+      config: {}, created_at: '', updated_at: '',
     },
   };
-}
-
-// Get raw adapter (simplest form)
-export function getAdapter(providerKey: string): MediaProvider | null {
-  return ADAPTERS[providerKey] || null;
 }
