@@ -46,3 +46,6 @@ export function createServiceClient() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 }
+
+// Alias: many routes import { createClient } from '@/lib/supabase/server'
+export { createServerSupabaseClient as createClient };
