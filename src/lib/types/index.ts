@@ -74,8 +74,17 @@ export interface GenerationBatch {
 
 // Provider
 export interface ProviderCapabilities {
-  formats: string[];
+  preview?: boolean;
+  final?: boolean;
+  batchCount?: number;
   webhooks: boolean;
+  streaming?: boolean;
+  nativeAudio?: boolean;
+  maxDuration?: number | null;
+  maxResolution?: string | null;
+  supportedAspectRatios?: string[];
+  supportedStyles?: string[];
+  formats?: string[];
   acceptsReferenceImage?: boolean;
   acceptsReferenceVideo?: boolean;
   acceptsReferenceAudio?: boolean;
@@ -119,10 +128,16 @@ export interface ProviderStatusResult {
 // Alias for backward compatibility
 export type PollStatusResult = ProviderStatusResult;
 
+export interface ProviderLimits {
+  maxConcurrent: number;
+  requestsPerMinute: number;
+}
+
 export interface MediaProvider {
-  readonly id: string;
+  readonly id?: string;
   readonly name: string;
   readonly capabilities: ProviderCapabilities;
+  readonly limits?: ProviderLimits;
   generate(params: GenerationParams): Promise<GenerationResult>;
   pollStatus?(externalJobId: string): Promise<ProviderStatusResult>;
   downloadResult?(externalJobId: string): Promise<Buffer>;
