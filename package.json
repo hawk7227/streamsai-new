@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "ESLINT_USE_FLAT_CONFIG=false eslint src --ext .ts,.tsx --max-warnings 100",
+    "type-check": "tsc --noEmit",
     "test": "npx playwright test",
     "worker:image": "TOOL_TYPE=image tsx workers/generation-worker.ts",
     "worker:video": "TOOL_TYPE=video tsx workers/generation-worker.ts",
@@ -33,6 +34,8 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@types/uuid": "^10.0.0",
+    "eslint": "^9.17.0",
+    "eslint-config-next": "^15.1.0",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0"
   }

@@ -33,15 +33,16 @@ const buildAssistantSystemPrompt = ({
   return `${context} Return JSON only with keys "enhance", "detail", "style". Each value must be a short phrase that could be appended to the prompt.`;
 };
 
-const extractOutputText = (payload: any) => {
+const extractOutputText = (payload: Record<string, unknown>): string | null => {
   if (typeof payload?.output_text === "string") {
     return payload.output_text;
   }
 
-  const content = payload?.output?.[0]?.content;
+  const output = payload?.output as Array<Record<string, unknown>> | undefined;
+  const content = output?.[0]?.content;
   if (Array.isArray(content)) {
-    const textBlock = content.find((block) => block.type === "output_text");
-    if (textBlock?.text) {
+    const textBlock = content.find((block: Record<string, unknown>) => block.type === "output_text") as Record<string, unknown> | undefined;
+    if (typeof textBlock?.text === "string") {
       return textBlock.text;
     }
   }
