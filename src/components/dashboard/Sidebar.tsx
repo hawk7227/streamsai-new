@@ -178,6 +178,46 @@ export default function Sidebar({
                     </>
                   ),
                 },
+                {
+                  name: "Preview",
+                  href: "/dashboard/preview",
+                  icon: (
+                    <>
+                      <circle cx="12" cy="12" r="10" />
+                      <polygon points="10 8 16 12 10 16 10 8" />
+                    </>
+                  ),
+                },
+                {
+                  name: "Editor",
+                  href: "/dashboard/editor",
+                  icon: (
+                    <>
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                    </>
+                  ),
+                },
+                {
+                  name: "Compose",
+                  href: "/dashboard/compose",
+                  icon: (
+                    <>
+                      <polygon points="23 7 16 12 23 17 23 7" />
+                      <rect x="1" y="5" width="15" height="14" rx="2" />
+                    </>
+                  ),
+                },
+                {
+                  name: "Characters",
+                  href: "/dashboard/characters",
+                  icon: (
+                    <>
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </>
+                  ),
+                },
               ].map((item) => (
                 <Link
                   key={item.name}
@@ -220,6 +260,17 @@ export default function Sidebar({
                       <rect x="3" y="14" width="7" height="7" />
                     </>
                   ),
+                },
+                {
+                  name: "Renders",
+                  href: "/dashboard/renders",
+                  icon: (
+                    <>
+                      <rect x="2" y="7" width="20" height="14" rx="2" />
+                      <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+                    </>
+                  ),
+                  badge: "3",
                 },
                 {
                   name: "Library",

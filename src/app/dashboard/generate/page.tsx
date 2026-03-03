@@ -1,9 +1,18 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import StepFlowBar from '@/components/generate/StepFlowBar';
 import PreviewRenderer from '@/components/generate/PreviewRenderers';
 import type { GenerateStep } from '@/lib/types';
+import ExecutionModeBar, { type ExecutionMode } from '@/components/generate/ExecutionModeBar';
+import CameraControls from '@/components/generate/CameraControls';
+import CharacterRef from '@/components/generate/CharacterRef';
+import PreviewGates from '@/components/generate/PreviewGates';
+import SafeZonePanel from '@/components/generate/SafeZonePanel';
+import HybridPanel from '@/components/generate/HybridPanel';
+import AutoPanel from '@/components/generate/AutoPanel';
+import VideoModeTabs from '@/components/generate/VideoModeTabs';
 
 type ToolType = 'image' | 'video' | 'voice' | 'script' | 'image_to_video' | 'video_to_video' | 'avatar' | 'edit';
 type QualityTier = 'standard' | 'premium' | 'ultra';
@@ -84,6 +93,7 @@ const qualityTiers: { tier: QualityTier; label: string; desc: string; color: str
 
 export default function GeneratePage() {
   const [selectedTool, setSelectedTool] = useState<ToolType>('image');
+  const router = useRouter();
   const [generateStep, setGenerateStep] = useState<GenerateStep>('configure');
   const [prompt, setPrompt] = useState('');
   const [negativePrompt, setNegativePrompt] = useState('');
@@ -92,6 +102,14 @@ export default function GeneratePage() {
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<GenerationResult[]>([]);
   const [finalizingId, setFinalizingId] = useState<string | null>(null);
+
+  // P1: Execution mode, camera, character, video mode
+  const [execMode, setExecMode] = useState<ExecutionMode>('manual');
+  const [camera, setCamera] = useState('static');
+  const [videoDuration, setVideoDuration] = useState(5);
+  const [extendClip, setExtendClip] = useState(false);
+  const [characterId, setCharacterId] = useState<string | null>(null);
+  const [videoMode, setVideoMode] = useState<'text_to_video' | 'image_to_video' | 'video_to_video' | 'lip_sync'>('text_to_video');
 
   // Bulk mode
   const [bulkMode, setBulkMode] = useState(false);
@@ -210,6 +228,29 @@ export default function GeneratePage() {
       {/* 4-Step Flow Bar */}
       <StepFlowBar current={generateStep} onStepClick={setGenerateStep} />
 
+      {/* Execution Mode Selector */}
+      <ExecutionModeBar mode={execMode} onChange={setExecMode} />
+
+      {/* Hybrid/Auto Panels */}
+      {execMode === 'hybrid' && <HybridPanel />}
+      {execMode === 'auto' && <AutoPanel />}
+
+      {/* Quick Actions */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, marginTop: -16 }}>
+        <button
+          onClick={() => router.push('/dashboard/preview')}
+          style={{ padding: '6px 14px', borderRadius: 8, fontSize: '0.7rem', fontWeight: 600, background: 'rgba(99,102,241,0.08)', color: '#6366f1', border: '1px solid rgba(99,102,241,0.2)', cursor: 'pointer' }}
+        >
+          &#128065; Preview in Platforms
+        </button>
+        <button
+          onClick={() => router.push('/dashboard/editor')}
+          style={{ padding: '6px 14px', borderRadius: 8, fontSize: '0.7rem', fontWeight: 600, background: 'rgba(16,185,129,0.08)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)', cursor: 'pointer' }}
+        >
+          &#9986; Open Editor
+        </button>
+      </div>
+
       {/* Tool Selector */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 28 }}>
         {tools.map((t) => (
@@ -287,6 +328,21 @@ export default function GeneratePage() {
           <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8, display: 'block' }}>Negative Prompt <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(optional)</span></label>
           <input value={negativePrompt} onChange={(e) => setNegativePrompt(e.target.value)} placeholder="Things to avoid..." style={{ width: '100%' }} />
         </div>
+      )}
+
+      {/* Video Sub-Modes */}
+      {(selectedTool === 'video' || selectedTool === 'image_to_video' || selectedTool === 'video_to_video') && (
+        <VideoModeTabs mode={videoMode} onChange={setVideoMode} />
+      )}
+
+      {/* Camera Controls (video tools only) */}
+      {(selectedTool === 'video' || selectedTool === 'image_to_video' || selectedTool === 'video_to_video') && (
+        <CameraControls camera={camera} onChange={setCamera} duration={videoDuration} onDurationChange={setVideoDuration} extendClip={extendClip} onExtendChange={setExtendClip} />
+      )}
+
+      {/* Character Reference */}
+      {(selectedTool === 'video' || selectedTool === 'image_to_video' || selectedTool === 'avatar') && (
+        <CharacterRef characterId={characterId} onChange={setCharacterId} />
       )}
 
       {/* Tool-Specific Settings */}
@@ -513,6 +569,12 @@ export default function GeneratePage() {
           ))}
         </div>
       )}
+
+      {/* Platform Safe Zones (inline) */}
+      <SafeZonePanel />
+
+      {/* Preview Gates */}
+      <PreviewGates />
 
       {/* How It Works */}
       <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 12, padding: 24, marginTop: 8 }}>

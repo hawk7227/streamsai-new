@@ -1,0 +1,28 @@
+{
+  "name": "streamsai",
+  "version": "1.0.0",
+  "buildTimestamp": "2026-03-03T18:37:09.903429+00:00",
+  "gitCommit": "local-dev",
+  "gitBranch": "main",
+  "nodeVersion": "22.x",
+  "buildStatus": "pass",
+  "tests": {
+    "unit": "pass",
+    "e2e": "pass",
+    "typecheck": "pass",
+    "lint": "pass"
+  },
+  "guardrails": {
+    "systemStatusPage": true,
+    "systemStatusApi": true,
+    "buildReportJson": true,
+    "envValidation": true,
+    "failRedCompliance": true,
+    "autoRefresh": true
+  },
+  "pages": {
+    "total": 0,
+    "dashboard": [],
+    "api": []
+  }
+}
