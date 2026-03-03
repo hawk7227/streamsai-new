@@ -262,3 +262,78 @@ export interface WorkspaceMember { id: string; workspace_id: string; user_id: st
 export interface ToolConfig { id: string; workspace_id: string; tool_type: ToolType; is_enabled: boolean; default_quality_tier: QualityTier; default_params: Record<string, unknown>; usage_count: number; last_used_at: string | null; created_at: string; updated_at: string; }
 export type CreditTransactionType = 'deduction_preview' | 'deduction_final' | 'refund_preview' | 'refund_final' | 'purchase' | 'monthly_allowance' | 'admin_adjustment' | 'promo_credit';
 export interface CreditTransaction { id: string; workspace_id: string; user_id: string | null; generation_id: string | null; type: CreditTransactionType; amount: number; balance_before: number; balance_after: number; description: string | null; metadata: Record<string, unknown>; created_at: string; }
+
+
+// =============================================================================
+// Preview System Types
+// =============================================================================
+
+export type PreviewStage = 'storyboard' | 'animatic' | 'single_scene' | 'full_render';
+export type SceneStatus = 'pending' | 'generating' | 'review' | 'approved' | 'rejected';
+
+export interface SceneTimeRange {
+  start: number;
+  end: number;
+}
+
+export interface Scene {
+  id: string;
+  index: number;
+  name: string;
+  timeRange: SceneTimeRange;
+  status: SceneStatus;
+  prompt: string;
+  thumbnailUrl?: string;
+  videoUrl?: string;
+  safeZoneCompliance?: Record<string, { pass: boolean; violations: string[] }>;
+}
+
+export interface PreviewSession {
+  id: string;
+  projectId: string;
+  stage: PreviewStage;
+  targetPlatforms: string[];
+  adMode: boolean;
+  scenes: Scene[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+// =============================================================================
+// Safe Zone Types
+// =============================================================================
+
+export interface Margins {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+}
+
+export interface PlatformSafeZone {
+  id: string;
+  name: string;
+  canvas: { width: number; height: number };
+  ratio: string;
+  safeZone: { width: number; height: number };
+  organic: Margins;
+  ads: Margins;
+  maxDuration: string;
+  codec: string;
+  fps: string;
+  notes: string;
+}
+
+export interface OverlayElement {
+  type: 'text' | 'caption' | 'logo' | 'cta' | 'face';
+  label: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface SafeZoneComplianceResult {
+  allPass: boolean;
+  platforms: Record<string, { pass: boolean; violations: string[] }>;
+}
