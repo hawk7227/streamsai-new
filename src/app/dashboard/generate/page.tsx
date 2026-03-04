@@ -2,14 +2,11 @@
 
 import { useState, useCallback } from "react";
 import ToolRail from "@/components/studio/ToolRail";
-import StudioExecutionModeBar from "@/components/studio/StudioExecutionModeBar";
 import PromptPanel from "@/components/studio/PromptPanel";
 import StudioSafeZonePanel from "@/components/studio/StudioSafeZonePanel";
 import StudioPreviewGates from "@/components/studio/StudioPreviewGates";
 import OutputGallery, { type GalleryJob } from "@/components/studio/OutputGallery";
-import HybridModePanel, { type HybridStep } from "@/components/studio/HybridModePanel";
-import AutoModePanel from "@/components/studio/AutoModePanel";
-import type { ToolCodename, ExecutionMode, GateStage } from "@/components/studio/tool-data";
+import type { ToolCodename, GateStage } from "@/components/studio/tool-data";
 
 // ── Demo data ──────────────────────────────────────────────────────────
 const DEMO_JOBS: GalleryJob[] = [
@@ -20,27 +17,9 @@ const DEMO_JOBS: GalleryJob[] = [
   { id: "j5", title: "Voiceover — product intro", tool: "ORACLE", type: "voice", status: "queued", cost: "$0.03" },
 ];
 
-const DEMO_HYBRID_STEPS: HybridStep[] = [
-  { id: "s1", label: "Step 1: Script", icon: "📝", provider: "Claude Sonnet", status: "done", cost: "2cr" },
-  {
-    id: "s2",
-    label: "Step 2: Voice Generation",
-    icon: "🎙️",
-    provider: "ElevenLabs Turbo",
-    status: "awaiting",
-    cost: "5cr",
-    score: 88,
-    duration: "2:14",
-    body: "ElevenLabs Turbo voiceover. Duration: 2:14. Voice: Rachel. Quality: 88%.",
-  },
-  { id: "s3", label: "Step 3: Thumbnail", icon: "🖼️", provider: "FLUX", status: "pending" },
-  { id: "s4", label: "Step 4: Video Assembly", icon: "🎬", provider: "PHOENIX", status: "pending" },
-];
-
 // ── Page ────────────────────────────────────────────────────────────────
 export default function GeneratePage() {
   const [selectedTool, setSelectedTool] = useState<ToolCodename>("PHOENIX");
-  const [execMode, setExecMode] = useState<ExecutionMode>("manual");
   const [prompt, setPrompt] = useState(
     "Cinematic aerial shot of a futuristic city at sunset, neon lights, flying vehicles, 4K"
   );
@@ -50,7 +29,6 @@ export default function GeneratePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [jobs, setJobs] = useState<GalleryJob[]>(DEMO_JOBS);
-  const [hybridSteps, setHybridSteps] = useState<HybridStep[]>(DEMO_HYBRID_STEPS);
 
   // ── Handlers ──
   const handleGenerate = useCallback(async () => {
@@ -89,16 +67,6 @@ export default function GeneratePage() {
 
   const handleGateClick = useCallback((gate: GateStage) => {
     setCurrentGate(gate);
-  }, []);
-
-  const handleHybridAction = useCallback((action: string, stepId: string) => {
-    setHybridSteps((prev) =>
-      prev.map((s) => {
-        if (s.id === stepId && action === "approve") return { ...s, status: "done" as const };
-        if (s.id === stepId && action === "regen") return { ...s, body: "Regenerating..." };
-        return s;
-      })
-    );
   }, []);
 
   return (
@@ -141,9 +109,6 @@ export default function GeneratePage() {
           </button>
         </div>
       </div>
-
-      {/* Execution Mode */}
-      <StudioExecutionModeBar mode={execMode} onChange={setExecMode} />
 
       {/* Prompt Panel */}
       <PromptPanel
@@ -221,22 +186,6 @@ export default function GeneratePage() {
         >
           {error}
         </div>
-      )}
-
-      {/* Hybrid Mode Panel */}
-      {execMode === "hybrid" && (
-        <HybridModePanel
-          steps={hybridSteps}
-          onApprove={(id) => handleHybridAction("approve", id)}
-          onEdit={(id) => handleHybridAction("edit", id)}
-          onRegen={(id) => handleHybridAction("regen", id)}
-          onSkip={(id) => handleHybridAction("skip", id)}
-        />
-      )}
-
-      {/* Auto Mode Panel */}
-      {execMode === "auto" && (
-        <AutoModePanel onRun={() => { /* Will wire to real API */ }} />
       )}
 
       {/* Output Gallery */}
