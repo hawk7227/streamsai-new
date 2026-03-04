@@ -27,7 +27,7 @@ const MODE_ACTIVE_STYLES: Record<ExecutionMode, { background: string; color: str
 
 export default function StudioExecutionModeBar({ mode, onChange }: ExecutionModeBarProps) {
   return (
-    <div className="mb-3">
+    <div className="mb-2">
       <div
         className="flex rounded-r1 p-[3px] gap-[2px] mb-2"
         style={{
