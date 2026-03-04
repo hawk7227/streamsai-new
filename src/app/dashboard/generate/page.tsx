@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import ContentToolSidebar from "@/components/studio/ContentToolSidebar";
 import PromptPanel from "@/components/studio/PromptPanel";
 import StudioSafeZonePanel from "@/components/studio/StudioSafeZonePanel";
 import StudioPreviewGates from "@/components/studio/StudioPreviewGates";
@@ -19,7 +20,7 @@ const DEMO_JOBS: GalleryJob[] = [
 // ── Page ────────────────────────────────────────────────────────────────
 export default function GeneratePage() {
   const [selectedTool, setSelectedTool] = useState<ToolCodename>("PHOENIX");
-  const [toolsExpanded, setToolsExpanded] = useState(true);
+  const [toolSidebarCollapsed, setToolSidebarCollapsed] = useState(false);
   const [prompt, setPrompt] = useState(
     "Cinematic aerial shot of a futuristic city at sunset, neon lights, flying vehicles, 4K"
   );
@@ -30,7 +31,6 @@ export default function GeneratePage() {
   const [error, setError] = useState<string | null>(null);
   const [jobs, setJobs] = useState<GalleryJob[]>(DEMO_JOBS);
 
-  // ── Handlers ──
   const handleGenerate = useCallback(async () => {
     if (!prompt.trim()) return;
     setLoading(true);
@@ -48,7 +48,6 @@ export default function GeneratePage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.details ?? data.error ?? "Generation failed");
-      // Add to gallery
       const newJobs: GalleryJob[] = (data.generations ?? []).map((g: Record<string, string>) => ({
         id: g.id,
         title: prompt.slice(0, 40),
@@ -70,164 +69,142 @@ export default function GeneratePage() {
   }, []);
 
   return (
-    <div className="animate-fade-up">
-      {/* Header */}
-      <div className="flex justify-between items-start mb-2">
-        <div>
-          <h1 className="text-[20px] font-extrabold tracking-tight mb-[2px]">
-            ✦ AI Media Studio
-          </h1>
-          <p className="text-[11.5px]" style={{ color: "var(--color-t-2)" }}>
-            Generate images, video, audio, voice, and 3D — 50+ concurrent jobs, tab-close safe
-          </p>
-        </div>
-        <div className="flex gap-1.5">
-          <button
-            className="py-[5px] px-[10px] rounded-r1 text-[10px] font-semibold transition-all duration-fast"
-            style={{
-              background: "var(--color-bg-4)",
-              color: "var(--color-t-2)",
-              border: "1px solid var(--color-bdr)",
-            }}
-          >
-            📤 Share
-          </button>
-          <button
-            className="py-[5px] px-[10px] rounded-r1 text-[10px] font-semibold transition-all duration-fast"
-            style={{
-              background: "var(--color-bg-4)",
-              color: "var(--color-t-2)",
-              border: "1px solid var(--color-bdr)",
-            }}
-          >
-            🤖 Copilot
-          </button>
-        </div>
-      </div>
-
-      {/* Collapsible Tool Grid */}
-      <div className="mb-2">
-        <button
-          onClick={() => setToolsExpanded(!toolsExpanded)}
-          className="flex items-center gap-1.5 mb-1.5"
-          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-t-3)", fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", padding: 0 }}
-        >
-          <span style={{ fontSize: 7, opacity: 0.6 }}>{toolsExpanded ? "▼" : "▶"}</span>
-          Tools — {TOOLS.find(t => t.codename === selectedTool)?.label ?? selectedTool}
-          <span style={{ color: "var(--color-acc)", fontFamily: "var(--mono)", fontSize: 9 }}>
-            {TOOLS.find(t => t.codename === selectedTool)?.cost}
-          </span>
-        </button>
-        {toolsExpanded && (
-          <div className="grid grid-cols-5 gap-[6px]">
-            {TOOLS.map((tool) => {
-              const isActive = selectedTool === tool.codename;
-              return (
-                <button
-                  key={tool.codename}
-                  onClick={() => setSelectedTool(tool.codename)}
-                  className="text-left transition-all"
-                  style={{
-                    padding: "8px 10px",
-                    borderRadius: 8,
-                    background: isActive ? "var(--color-acc-glow)" : "var(--color-bg-3)",
-                    border: `1px solid ${isActive ? "var(--color-acc)" : "var(--color-bdr)"}`,
-                    cursor: "pointer",
-                    transition: "all 150ms",
-                  }}
-                >
-                  <div style={{ fontSize: 14, marginBottom: 2 }}>{tool.icon}</div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: isActive ? "var(--color-acc)" : "var(--color-t-1)", marginBottom: 1 }}>{tool.label}</div>
-                  <div style={{ fontSize: 8.5, color: "var(--color-t-3)", lineHeight: 1.3 }}>{tool.description}</div>
-                  <div style={{ fontSize: 9, fontFamily: "var(--mono)", color: "var(--color-acc)", marginTop: 3 }}>{tool.cost}</div>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Prompt Panel */}
-      <PromptPanel
-        tool={selectedTool}
-        prompt={prompt}
-        onPromptChange={setPrompt}
-        batchCount={batchCount}
-        onBatchCountChange={setBatchCount}
+    <div
+      className="animate-fade-up"
+      style={{ display: "flex", height: "calc(100vh - 48px)", margin: "-16px -24px", overflow: "hidden" }}
+    >
+      {/* Content Tool Sidebar — left */}
+      <ContentToolSidebar
+        collapsed={toolSidebarCollapsed}
+        onToggle={() => setToolSidebarCollapsed((p) => !p)}
+        onToolClick={(id) => {
+          const mapping: Record<string, ToolCodename> = {
+            script: "ECHO", voice: "ORACLE", image: "PRISM", video: "PHOENIX",
+            video_edit: "PHOENIX", image_edit: "PRISM", export: "FORGE", webhook: "FORGE",
+          };
+          const codename = mapping[id];
+          if (codename) setSelectedTool(codename);
+        }}
       />
 
-      {/* Safe Zones */}
-      <StudioSafeZonePanel />
-
-      {/* Preview Gates */}
-      <div className="mt-2">
-        <StudioPreviewGates
-          currentGate={currentGate}
-          completedGates={completedGates}
-          onGateClick={handleGateClick}
-        />
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex gap-2 mb-3">
-        <button
-          onClick={handleGenerate}
-          disabled={loading || !prompt.trim()}
-          className="py-2 px-4 rounded-r1 text-[11px] font-semibold transition-all duration-fast"
-          style={{
-            background: loading ? "var(--color-bg-4)" : "var(--color-acc)",
-            color: loading ? "var(--color-t-3)" : "#000",
-            border: "none",
-            cursor: loading ? "not-allowed" : "pointer",
-            opacity: !prompt.trim() ? 0.3 : 1,
-          }}
-        >
-          {loading ? "⟳ Generating..." : "▶ Generate"}
-        </button>
-        <button
-          onClick={() => {
-            setBatchCount(50);
-          }}
-          className="py-2 px-4 rounded-r1 text-[11px] font-semibold transition-all duration-fast"
-          style={{
-            background: "var(--color-bg-4)",
-            color: "var(--color-t-2)",
-            border: "1px solid var(--color-bdr)",
-            cursor: "pointer",
-          }}
-        >
-          ⚡ Batch 50
-        </button>
-        <button
-          className="py-2 px-4 rounded-r1 text-[11px] font-semibold transition-all duration-fast"
-          style={{
-            background: "var(--color-bg-4)",
-            color: "var(--color-t-2)",
-            border: "1px solid var(--color-bdr)",
-            cursor: "pointer",
-          }}
-        >
-          📤 Post to Social
-        </button>
-      </div>
-
-      {/* Error */}
-      {error && (
-        <div
-          className="py-3 px-3.5 rounded-r1 text-[11px] mb-3"
-          style={{
-            background: "rgba(255,68,85,0.08)",
-            border: "1px solid rgba(255,68,85,0.15)",
-            color: "var(--color-red)",
-          }}
-        >
-          {error}
+      {/* Workspace — right, scrollable */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px" }}>
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+          <div>
+            <h1 style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-0.4px", marginBottom: 2 }}>
+              ✦ AI Media Studio
+            </h1>
+            <p style={{ fontSize: "11.5px", color: "var(--color-t-2)" }}>
+              Generate images, video, audio, voice, and 3D — 50+ concurrent jobs, tab-close safe
+            </p>
+          </div>
+          <div style={{ display: "flex", gap: 6 }}>
+            <button style={{ padding: "5px 10px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "var(--color-bg-4)", color: "var(--color-t-2)", border: "1px solid var(--color-bdr)", cursor: "pointer", fontFamily: "inherit" }}>
+              📤 Share
+            </button>
+            <button style={{ padding: "5px 10px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "var(--color-bg-4)", color: "var(--color-t-2)", border: "1px solid var(--color-bdr)", cursor: "pointer", fontFamily: "inherit" }}>
+              🤖 Copilot
+            </button>
+          </div>
         </div>
-      )}
 
-      {/* Output Gallery */}
-      <div className="mt-3">
-        <OutputGallery jobs={jobs} />
+        {/* Tool Selector Grid — compact 5-col */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6, marginBottom: 12 }}>
+          {TOOLS.map((tool) => {
+            const isActive = selectedTool === tool.codename;
+            return (
+              <button
+                key={tool.codename}
+                onClick={() => setSelectedTool(tool.codename)}
+                style={{
+                  padding: "8px 10px", borderRadius: 8, textAlign: "left",
+                  background: isActive ? "var(--color-acc-glow)" : "var(--color-bg-3)",
+                  border: `1px solid ${isActive ? "var(--color-acc)" : "var(--color-bdr)"}`,
+                  cursor: "pointer", transition: "all 150ms", fontFamily: "inherit", color: "inherit",
+                }}
+              >
+                <div style={{ fontSize: 14, marginBottom: 2 }}>{tool.icon}</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: isActive ? "var(--color-acc)" : "var(--color-t-1)", marginBottom: 1 }}>{tool.label}</div>
+                <div style={{ fontSize: 8.5, color: "var(--color-t-3)", lineHeight: 1.3 }}>{tool.description}</div>
+                <div style={{ fontSize: 9, fontFamily: "var(--mono)", color: "var(--color-acc)", marginTop: 3 }}>{tool.cost}</div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Prompt Panel */}
+        <PromptPanel
+          tool={selectedTool}
+          prompt={prompt}
+          onPromptChange={setPrompt}
+          batchCount={batchCount}
+          onBatchCountChange={setBatchCount}
+        />
+
+        {/* Safe Zones */}
+        <StudioSafeZonePanel />
+
+        {/* Preview Gates */}
+        <div style={{ marginTop: 8 }}>
+          <StudioPreviewGates
+            currentGate={currentGate}
+            completedGates={completedGates}
+            onGateClick={handleGateClick}
+          />
+        </div>
+
+        {/* Action Buttons */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+          <button
+            onClick={handleGenerate}
+            disabled={loading || !prompt.trim()}
+            style={{
+              padding: "8px 16px", borderRadius: 8, fontSize: 11, fontWeight: 600,
+              background: loading ? "var(--color-bg-4)" : "var(--color-acc)",
+              color: loading ? "var(--color-t-3)" : "#000",
+              border: "none", cursor: loading ? "not-allowed" : "pointer",
+              opacity: !prompt.trim() ? 0.3 : 1, fontFamily: "inherit",
+            }}
+          >
+            {loading ? "⟳ Generating..." : "▶ Generate"}
+          </button>
+          <button
+            onClick={() => setBatchCount(50)}
+            style={{
+              padding: "8px 16px", borderRadius: 8, fontSize: 11, fontWeight: 600,
+              background: "var(--color-bg-4)", color: "var(--color-t-2)",
+              border: "1px solid var(--color-bdr)", cursor: "pointer", fontFamily: "inherit",
+            }}
+          >
+            ⚡ Batch 50
+          </button>
+          <button
+            style={{
+              padding: "8px 16px", borderRadius: 8, fontSize: 11, fontWeight: 600,
+              background: "var(--color-bg-4)", color: "var(--color-t-2)",
+              border: "1px solid var(--color-bdr)", cursor: "pointer", fontFamily: "inherit",
+            }}
+          >
+            📤 Post to Social
+          </button>
+        </div>
+
+        {/* Error */}
+        {error && (
+          <div style={{
+            padding: "12px 14px", borderRadius: 8, fontSize: 11, marginBottom: 12,
+            background: "rgba(255,68,85,0.08)", border: "1px solid rgba(255,68,85,0.15)",
+            color: "var(--color-red)",
+          }}>
+            {error}
+          </div>
+        )}
+
+        {/* Output Gallery */}
+        <div style={{ marginTop: 12 }}>
+          <OutputGallery jobs={jobs} />
+        </div>
       </div>
     </div>
   );
