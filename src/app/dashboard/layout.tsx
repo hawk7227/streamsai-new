@@ -11,6 +11,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const { user, loading } = useAuth();
   const router = useRouter();
 
@@ -44,8 +45,10 @@ export default function DashboardLayout({
       <Sidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
+        collapsed={isSidebarCollapsed}
+        onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
       />
-      <main className="flex-1 lg:ml-[260px] p-6 lg:p-8">
+      <main className={`flex-1 ${isSidebarCollapsed ? "lg:ml-[48px]" : "lg:ml-[260px]"} p-4 lg:p-6 transition-all duration-200`}>
         {/* Mobile Header */}
         <div className="lg:hidden flex items-center justify-between mb-6">
           <button

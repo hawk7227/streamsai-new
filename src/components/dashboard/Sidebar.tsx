@@ -9,9 +9,13 @@ import { ALL_PLANS, PLAN_ORDER, type PlanKey } from "@/lib/plans";
 export default function Sidebar({
   isOpen,
   onClose,
+  collapsed,
+  onToggleCollapse,
 }: {
   isOpen: boolean;
   onClose: () => void;
+  collapsed: boolean;
+  onToggleCollapse: () => void;
 }) {
   const pathname = usePathname();
   const { user, signOut, plan, limits, usage, usageLoading, membershipRole } =
@@ -109,395 +113,255 @@ export default function Sidebar({
       )}
 
       <aside
-        className={`fixed top-0 left-0 bottom-0 w-[260px] bg-bg-secondary border-r border-border-color flex flex-col z-50 transition-transform duration-300 ${
+        className={`fixed top-0 left-0 bottom-0 ${collapsed ? "w-[48px]" : "w-[260px]"} bg-bg-secondary border-r border-border-color flex flex-col z-50 transition-all duration-200 ${
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
-        <div className="p-5 border-b border-border-color">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-accent-indigo to-accent-purple rounded-xl flex items-center justify-center text-white">
+        <div className={`${collapsed ? "p-2" : "p-5"} border-b border-border-color flex items-center justify-between`}>
+          <Link href="/" className={`flex items-center ${collapsed ? "justify-center w-full" : "gap-3"}`}>
+            <div className="w-8 h-8 bg-gradient-to-br from-accent-indigo to-accent-purple rounded-lg flex items-center justify-center text-white flex-shrink-0">
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
-                className="w-5 h-5"
+                className="w-4 h-4"
               >
                 <path d="M12 3l1.912 5.813a2 2 0 001.272 1.272L21 12l-5.816 1.915a2 2 0 00-1.272 1.272L12 21l-1.912-5.813a2 2 0 00-1.272-1.272L3 12l5.816-1.915a2 2 0 001.272-1.272L12 3z" />
               </svg>
             </div>
-            <span className="text-xl font-bold">StreamsAI</span>
+            {!collapsed && <span className="text-xl font-bold">StreamsAI</span>}
           </Link>
+          {!collapsed && (
+            <button
+              onClick={onToggleCollapse}
+              className="hidden lg:flex w-6 h-6 items-center justify-center rounded-md hover:bg-bg-tertiary text-text-muted transition-colors"
+              title="Collapse sidebar"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                <polyline points="11 17 6 12 11 7" /><polyline points="18 17 13 12 18 7" />
+              </svg>
+            </button>
+          )}
         </div>
+        {collapsed && (
+          <button
+            onClick={onToggleCollapse}
+            className="hidden lg:flex w-full py-2 items-center justify-center hover:bg-bg-tertiary text-text-muted transition-colors"
+            title="Expand sidebar"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+              <polyline points="13 17 18 12 13 7" /><polyline points="6 17 11 12 6 7" />
+            </svg>
+          </button>
+        )}
 
-        <nav className="flex-1 p-3 overflow-y-auto space-y-6">
+        <nav className={`flex-1 ${collapsed ? "p-1" : "p-3"} overflow-y-auto space-y-5 ${collapsed ? "overflow-x-hidden" : ""}`}>
+          {/* Top links */}
+          <div className="space-y-1">
+            {[
+              { name: "Dashboard", href: "/dashboard", icon: <><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></> },
+              { name: "Generate", href: "/dashboard/generate", icon: <path d="M12 3l1.912 5.813a2 2 0 001.272 1.272L21 12l-5.816 1.915a2 2 0 00-1.272 1.272L12 21l-1.912-5.813a2 2 0 00-1.272-1.272L3 12l5.816-1.915a2 2 0 001.272-1.272L12 3z" /> },
+              { name: "Pipelines", href: "/pipelines", icon: <><circle cx="12" cy="12" r="10" /><polygon points="10 8 16 12 10 16 10 8" /></> },
+            ].map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-[8px] text-[13px] overflow-hidden font-medium transition-colors ${
+                  isActive(item.href)
+                    ? "bg-accent/10 text-accent"
+                    : "text-text-secondary hover:bg-bg-tertiary hover:text-white"
+                }`}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-[18px] h-[18px] flex-shrink-0">{item.icon}</svg>
+                {item.name}
+              </Link>
+            ))}
+          </div>
+
+          {/* Content Generation */}
           <div>
-            <div className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-              Create
+            <div className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-text-muted overflow-hidden whitespace-nowrap">
+              Content Generation
             </div>
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               {[
-                {
-                  name: "AI Media Studio",
-                  href: "/dashboard/generate",
-                  badge: "10 tools",
-                  icon: (
-                    <>
-                      <path d="M12 3l1.912 5.813a2 2 0 001.272 1.272L21 12l-5.816 1.915a2 2 0 00-1.272 1.272L12 21l-1.912-5.813a2 2 0 00-1.272-1.272L3 12l5.816-1.915a2 2 0 001.272-1.272L12 3z" />
-                    </>
-                  ),
-                },
-                {
-                  name: "Video",
-                  href: "/dashboard/video",
-                  icon: (
-                    <>
-                      <polygon points="23 7 16 12 23 17 23 7" />
-                      <rect x="1" y="5" width="15" height="14" rx="2" />
-                    </>
-                  ),
-                },
-                {
-                  name: "Images",
-                  href: "/dashboard/image",
-                  icon: (
-                    <>
-                      <rect x="3" y="3" width="18" height="18" rx="2" />
-                      <circle cx="8.5" cy="8.5" r="1.5" />
-                      <polyline points="21 15 16 10 5 21" />
-                    </>
-                  ),
-                },
-                {
-                  name: "Voice",
-                  href: "/dashboard/voice",
-                  icon: (
-                    <>
-                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-                      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                    </>
-                  ),
-                },
-                {
-                  name: "Scripts",
-                  href: "/dashboard/script",
-                  icon: (
-                    <>
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                      <polyline points="14 2 14 8 20 8" />
-                    </>
-                  ),
-                },
-                {
-                  name: "Preview",
-                  href: "/dashboard/preview",
-                  icon: (
-                    <>
-                      <circle cx="12" cy="12" r="10" />
-                      <polygon points="10 8 16 12 10 16 10 8" />
-                    </>
-                  ),
-                },
-                {
-                  name: "Editor",
-                  href: "/dashboard/editor",
-                  icon: (
-                    <>
-                      <path d="M12 20h9" />
-                      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                    </>
-                  ),
-                },
-                {
-                  name: "Compose",
-                  href: "/dashboard/compose",
-                  icon: (
-                    <>
-                      <polygon points="23 7 16 12 23 17 23 7" />
-                      <rect x="1" y="5" width="15" height="14" rx="2" />
-                    </>
-                  ),
-                },
-                {
-                  name: "Characters",
-                  href: "/dashboard/characters",
-                  icon: (
-                    <>
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                      <circle cx="12" cy="7" r="4" />
-                    </>
-                  ),
-                },
+                { name: "Script Writer", desc: "Claude, GPT-4", href: "/dashboard/script", icon: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></> },
+                { name: "Voice Generator", desc: "ElevenLabs, OpenAI TTS", href: "/dashboard/voice", icon: <><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /></> },
+                { name: "Image Generator", desc: "DALL-E 3, FLUX, Stability", href: "/dashboard/image", icon: <><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></> },
+                { name: "Video Generator", desc: "Veo 3, Sora, Runway", href: "/dashboard/video", icon: <><polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" /></> },
               ].map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`flex items-center gap-3 px-3 py-3 rounded-[10px] text-sm font-medium transition-colors ${
+                  className={`flex items-center gap-3 px-3 py-2 rounded-[8px] transition-colors overflow-hidden ${
                     isActive(item.href)
-                      ? "bg-accent-indigo/10 text-accent-indigo"
+                      ? "bg-accent/10 text-accent"
                       : "text-text-secondary hover:bg-bg-tertiary hover:text-white"
                   }`}
                 >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    className="w-5 h-5"
-                  >
-                    {item.icon}
-                  </svg>
-                  {item.name}
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-[18px] h-[18px] flex-shrink-0">{item.icon}</svg>
+                  <div className="min-w-0">
+                    <div className="text-[13px] font-medium leading-tight">{item.name}</div>
+                    <div className="text-[10px] text-text-muted leading-tight truncate">{item.desc}</div>
+                  </div>
                 </Link>
               ))}
             </div>
           </div>
 
+          {/* Content */}
           <div>
-            <div className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-              Workspace
+            <div className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-text-muted overflow-hidden whitespace-nowrap">
+              Content
             </div>
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               {[
-                {
-                  name: "Dashboard",
-                  href: "/dashboard",
-                  icon: (
-                    <>
-                      <rect x="3" y="3" width="7" height="7" />
-                      <rect x="14" y="3" width="7" height="7" />
-                      <rect x="14" y="14" width="7" height="7" />
-                      <rect x="3" y="14" width="7" height="7" />
-                    </>
-                  ),
-                },
-                {
-                  name: "Renders",
-                  href: "/dashboard/renders",
-                  icon: (
-                    <>
-                      <rect x="2" y="7" width="20" height="14" rx="2" />
-                      <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
-                    </>
-                  ),
-                  badge: "3",
-                },
-                {
-                  name: "Library",
-                  href: "/dashboard/library",
-                  icon: (
-                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                  ),
-                  badge: "24",
-                },
-                {
-                  name: "Team",
-                  href: "/dashboard/team",
-                  icon: (
-                    <>
-                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                      <circle cx="9" cy="7" r="4" />
-                      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                    </>
-                  ),
-                },
-                {
-                  name: "Agency",
-                  href: "/dashboard/agency",
-                  icon: (
-                   <path d="M3 21h18M5 21V7l8-4 8 4v14M8 21v-14l6-3 6 3v14" />
-                  ),
-                  requiresAgencyPlan: true,
-                },
-                {
-                  name: "Analytics",
-                  href: "/dashboard/analytics",
-                  icon: (
-                    <>
-                      <line x1="18" y1="20" x2="18" y2="10" />
-                      <line x1="12" y1="20" x2="12" y2="4" />
-                      <line x1="6" y1="20" x2="6" y2="14" />
-                    </>
-                  ),
-                },
-              ]
-              .filter((item) => {
-                // Hide Agency if user doesn't have agency plan (enterprise)
-                if (item.requiresAgencyPlan) {
-                  return currentPlanKey === "enterprise";
-                }
-                return true;
-              })
-              .map((item) => (
+                { name: "History", href: "/dashboard/renders", icon: <><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></> },
+                { name: "Library", href: "/dashboard/library", icon: <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /> },
+              ].map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`flex items-center gap-3 px-3 py-3 rounded-[10px] text-sm font-medium transition-colors ${
+                  className={`flex items-center gap-3 px-3 py-2 rounded-[8px] text-[13px] overflow-hidden font-medium transition-colors ${
                     isActive(item.href)
-                      ? "bg-accent-indigo/10 text-accent-indigo"
+                      ? "bg-accent/10 text-accent"
                       : "text-text-secondary hover:bg-bg-tertiary hover:text-white"
                   }`}
                 >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    className="w-5 h-5 flex-shrink-0"
-                  >
-                    {item.name === "Dashboard" && (
-                        <>
-                        <rect x="3" y="3" width="7" height="7" />
-                        <rect x="14" y="3" width="7" height="7" />
-                        <rect x="14" y="14" width="7" height="7" />
-                        <rect x="3" y="14" width="7" height="7" />
-                      </>
-                    )}
-                     {item.name === "Library" && (
-                         <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                     )}
-                      {item.name === "Team" && (
-                         <>
-                         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                         <circle cx="9" cy="7" r="4" />
-                         <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                         <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                       </>
-                      )}
-                      {item.name === "Agency" && (
-                           <>
-                           <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                           </>
-                      )}
-                      {item.name === "Analytics" && (
-                          <>
-                          <line x1="18" y1="20" x2="18" y2="10" />
-                          <line x1="12" y1="20" x2="12" y2="4" />
-                          <line x1="6" y1="20" x2="6" y2="14" />
-                        </>
-                      )}
-                  </svg>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-[18px] h-[18px] flex-shrink-0">{item.icon}</svg>
                   {item.name}
-                  {item.badge && (
-                    <span className="ml-auto bg-accent-indigo text-white text-[11px] font-semibold px-2 py-0.5 rounded-full">
-                      {item.badge}
-                    </span>
-                  )}
                 </Link>
               ))}
             </div>
           </div>
 
+          {/* Post-Processing */}
           <div>
-            <div className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-              Account
+            <div className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-text-muted overflow-hidden whitespace-nowrap">
+              Post-Processing
             </div>
-            <div className="space-y-1">
-              {isSettingsLocked ? (
-                <div className="flex items-center gap-3 px-3 py-3 rounded-[10px] text-sm font-medium text-text-muted cursor-not-allowed opacity-60">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    className="w-5 h-5"
-                  >
-                    <circle cx="12" cy="12" r="3" />
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                  </svg>
-                  Settings
-                </div>
-              ) : (
+            <div className="space-y-0.5">
+              {[
+                { name: "Video Editor", desc: "JSON2Video, Shotstack", href: "/dashboard/editor", icon: <><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></> },
+                { name: "Image Editor", desc: "Resize, filter, watermark", href: "/dashboard/compose", icon: <><rect x="3" y="3" width="18" height="18" rx="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" /></> },
+              ].map((item) => (
                 <Link
-                  href="/dashboard/settings"
-                  className={`flex items-center gap-3 px-3 py-3 rounded-[10px] text-sm font-medium transition-colors ${
-                    isActive("/dashboard/settings")
-                      ? "bg-accent-indigo/10 text-accent-indigo"
+                  key={item.name}
+                  href={item.href}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-[8px] transition-colors overflow-hidden ${
+                    isActive(item.href)
+                      ? "bg-accent/10 text-accent"
                       : "text-text-secondary hover:bg-bg-tertiary hover:text-white"
                   }`}
                 >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    className="w-5 h-5"
-                  >
-                    <circle cx="12" cy="12" r="3" />
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                  </svg>
-                  Settings
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-[18px] h-[18px] flex-shrink-0">{item.icon}</svg>
+                  <div className="min-w-0">
+                    <div className="text-[13px] font-medium leading-tight">{item.name}</div>
+                    <div className="text-[10px] text-text-muted leading-tight truncate">{item.desc}</div>
+                  </div>
                 </Link>
-              )}
-              <a
-                href="#"
-                className="flex items-center gap-3 px-3 py-3 rounded-[10px] text-sm font-medium text-text-secondary transition-colors hover:bg-bg-tertiary hover:text-white"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="w-5 h-5"
+              ))}
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div>
+            <div className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-text-muted overflow-hidden whitespace-nowrap">
+              Actions
+            </div>
+            <div className="space-y-0.5">
+              {[
+                { name: "Export", desc: "Save to library / download", href: "/dashboard/preview", icon: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></> },
+                { name: "Webhook", desc: "Send to external service", href: "/dashboard/settings", icon: <><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></> },
+              ].map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-[8px] transition-colors overflow-hidden ${
+                    isActive(item.href)
+                      ? "bg-accent/10 text-accent"
+                      : "text-text-secondary hover:bg-bg-tertiary hover:text-white"
+                  }`}
                 >
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                  <line x1="12" y1="17" x2="12.01" y2="17" />
-                </svg>
-                Help
-              </a>
-              <button
-                onClick={signOut}
-                className="w-full flex items-center gap-3 px-3 py-3 rounded-[10px] text-sm font-medium text-text-secondary transition-colors hover:bg-bg-tertiary hover:text-white text-left"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="w-5 h-5"
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-[18px] h-[18px] flex-shrink-0">{item.icon}</svg>
+                  <div className="min-w-0">
+                    <div className="text-[13px] font-medium leading-tight">{item.name}</div>
+                    <div className="text-[10px] text-text-muted leading-tight truncate">{item.desc}</div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* System */}
+          <div>
+            <div className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-text-muted overflow-hidden whitespace-nowrap">
+              System
+            </div>
+            <div className="space-y-0.5">
+              {[
+                { name: "Integrations", href: "/dashboard/analytics" },
+                { name: "Settings", href: "/dashboard/settings" },
+              ].map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-[8px] text-[13px] overflow-hidden font-medium transition-colors ${
+                    isActive(item.href)
+                      ? "bg-accent/10 text-accent"
+                      : "text-text-secondary hover:bg-bg-tertiary hover:text-white"
+                  }`}
                 >
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
-                Sign Out
-              </button>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-[18px] h-[18px] flex-shrink-0">
+                    {item.name === "Integrations" && <><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></>}
+                    {item.name === "Settings" && <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></>}
+                  </svg>
+                  {item.name}
+                </Link>
+              ))}
             </div>
           </div>
         </nav>
 
-        <div className="p-4 border-t border-border-color">
-          <div className="bg-bg-tertiary rounded-xl p-4 mb-3">
-            <div className="flex justify-between items-center mb-3">
-              <span className="text-[13px] text-text-secondary">
-                Generations Used
-              </span>
-              <span className="text-[13px] font-semibold">{usageText}</span>
+        <div className={`${collapsed ? "p-1" : "p-3"} border-t border-border-color overflow-hidden`}>
+          {!collapsed && (
+            <div className="bg-bg-tertiary rounded-lg p-3 mb-2">
+              <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted mb-2">
+                Credits
+              </div>
+              <div className="flex justify-between items-baseline mb-2">
+                <span className="text-[18px] font-bold">{generationsUsed}</span>
+                <span className="text-[13px] text-text-muted">{typeof generationLimit === 'number' ? generationLimit.toLocaleString() : generationLimit}</span>
+              </div>
+              <div className="h-1.5 bg-bg-primary rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-accent-indigo to-accent-purple"
+                  style={{ width: `${usagePercent}%` }}
+                />
+              </div>
             </div>
-            <div className="h-1.5 bg-bg-primary rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-accent-indigo to-accent-purple"
-                style={{ width: `${usagePercent}%` }}
-              />
+          )}
+          {collapsed && (
+            <div className="flex items-center justify-center py-1 text-[10px] font-bold text-text-muted" title={`${generationsUsed} / ${generationLimit}`}>
+              {generationsUsed}
             </div>
-          </div>
+          )}
           <button
             type="button"
             onClick={() => setIsPlanModalOpen(true)}
-            className="w-full flex items-center justify-center gap-2 p-2.5 bg-gradient-to-r from-accent-indigo to-accent-purple text-white rounded-[10px] text-[13px] font-semibold transition-all hover:shadow-[0_4px_15px_rgba(99,102,241,0.3)]"
+            className={`w-full flex items-center justify-center ${collapsed ? "p-2" : "gap-2 p-2.5"} bg-gradient-to-r from-accent-indigo to-accent-purple text-white rounded-[10px] text-[13px] font-semibold transition-all hover:shadow-[0_4px_15px_rgba(99,102,241,0.3)]`}
           >
             <svg
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
-              className="w-4 h-4"
+              className="w-4 h-4 flex-shrink-0"
             >
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
             </svg>
-            View Plans
+            {!collapsed && "View Plans"}
           </button>
         </div>
       </aside>
