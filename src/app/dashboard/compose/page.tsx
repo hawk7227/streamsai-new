@@ -2,130 +2,115 @@
 
 import { useState } from "react";
 
-type Template = { id: string; icon: string; name: string; spec: string };
+const S = {
+  bg2: "var(--color-bg-2)", bg3: "var(--color-bg-3)", bg4: "var(--color-bg-4)",
+  bdr: "var(--color-bdr)", bdr2: "var(--color-bdr-2)",
+  t1: "var(--color-t-1)", t2: "var(--color-t-2)", t3: "var(--color-t-3)", t4: "var(--color-t-4)",
+  acc: "var(--color-acc)", blu: "var(--color-blu)", pur: "#8b5cf6",
+  r1: 8, r2: 12, mono: "'JetBrains Mono', var(--mono), monospace",
+};
 
-const TEMPLATES: Template[] = [
-  { id: "tiktok_reel", icon: "\u{1F4F1}", name: "TikTok Reel", spec: "9:16 \u2022 15\u201360s" },
-  { id: "yt_intro", icon: "\u25B6\uFE0F", name: "YouTube Intro", spec: "16:9 \u2022 5\u201310s" },
-  { id: "ig_story", icon: "\u{1F4F8}", name: "IG Story", spec: "9:16 \u2022 15s" },
-  { id: "product_demo", icon: "\u{1F6D2}", name: "Product Demo", spec: "16:9 \u2022 30\u2013120s" },
-  { id: "data_visual", icon: "\u{1F4CA}", name: "Data Visual", spec: "16:9 \u2022 Custom" },
-  { id: "tutorial", icon: "\u{1F393}", name: "Tutorial", spec: "16:9 \u2022 Custom" },
+const TEMPLATES = [
+  { id: "tiktok", icon: "📱", name: "TikTok Reel", spec: "9:16 • 15-60s" },
+  { id: "yt_intro", icon: "▶️", name: "YouTube Intro", spec: "16:9 • 5-10s" },
+  { id: "ig_story", icon: "📸", name: "IG Story", spec: "9:16 • 15s" },
+  { id: "product", icon: "🛒", name: "Product Demo", spec: "16:9 • 30-120s" },
+  { id: "data", icon: "📊", name: "Data Visual", spec: "16:9 • Custom" },
+  { id: "tutorial", icon: "🎓", name: "Tutorial", spec: "16:9 • Custom" },
 ];
 
-interface SceneConfig {
-  id: string;
-  name: string;
-  timeRange: string;
-  chips: string[];
-}
+interface Scene { id: string; name: string; time: string; chips: string[] }
 
-const DEFAULT_SCENES: SceneConfig[] = [
-  { id: "s1", name: "Intro", timeRange: "0:00\u20130:03", chips: ["Logo zoom-in", "Fade from black", "BGM: fade in"] },
-  { id: "s2", name: "Hero", timeRange: "0:03\u20130:12", chips: ["hero-shot.mp4", "Ken Burns zoom", "Caption overlay"] },
+const INITIAL_SCENES: Scene[] = [
+  { id: "s1", name: "Scene 1 — Intro", time: "0:00–0:03", chips: ["Logo zoom-in", "Fade from black", "BGM: fade in"] },
+  { id: "s2", name: "Scene 2 — Hero", time: "0:03–0:12", chips: ["hero-shot.mp4", "Ken Burns zoom", "Caption overlay"] },
 ];
 
 export default function ComposePage() {
-  const [selectedTemplate, setSelectedTemplate] = useState("tiktok_reel");
-  const [scenes, setScenes] = useState(DEFAULT_SCENES);
-  const [assets, setAssets] = useState(["hero-shot.mp4 (4.2MB)", "logo.png (120KB)", "bgm.mp3 (2.1MB)"]);
+  const [template, setTemplate] = useState("tiktok");
+  const [scenes, setScenes] = useState(INITIAL_SCENES);
 
   const addScene = () => {
-    const idx = scenes.length + 1;
-    setScenes([...scenes, { id: `s${idx}`, name: `Scene ${idx}`, timeRange: "0:00\u20130:00", chips: [] }]);
+    const n = scenes.length + 1;
+    setScenes([...scenes, { id: `s${n}`, name: `Scene ${n}`, time: "0:00–0:00", chips: [] }]);
   };
 
   return (
-    <div style={{ maxWidth: 1200 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
+    <div>
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
         <div>
-          <h1 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: 4 }}>{"\u{1F3AC}"} Composition Studio</h1>
-          <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>Programmatic video composition — upload assets, build from templates, Remotion rendering</p>
+          <h1 style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-0.4px", marginBottom: 2 }}>🎬 Composition Studio</h1>
+          <p style={{ fontSize: 11.5, color: S.t2 }}>Programmatic video composition — upload assets, build from templates, Remotion rendering</p>
         </div>
       </div>
 
       {/* Template Grid */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>Template</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
-          {TEMPLATES.map((t) => (
+      <label style={{ display: "block", fontSize: 9.5, fontWeight: 600, color: S.t3, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.04em" }}>Template</label>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6, marginBottom: 16 }}>
+        {TEMPLATES.map(t => {
+          const on = template === t.id;
+          return (
             <button
               key={t.id}
-              onClick={() => setSelectedTemplate(t.id)}
+              onClick={() => setTemplate(t.id)}
               style={{
-                padding: 14, borderRadius: 10, textAlign: "center", cursor: "pointer",
-                background: selectedTemplate === t.id ? "rgba(99,102,241,0.08)" : "var(--bg-secondary)",
-                border: `1px solid ${selectedTemplate === t.id ? "rgba(99,102,241,0.3)" : "var(--border)"}`,
-                transition: "all 0.15s", fontFamily: "inherit",
+                padding: 10, borderRadius: S.r1, textAlign: "center", cursor: "pointer",
+                background: on ? "var(--color-acc-glow)" : S.bg3,
+                border: `1px solid ${on ? S.acc : S.bdr}`,
+                fontFamily: "inherit", color: "inherit", transition: "all 150ms",
               }}
             >
-              <div style={{ fontSize: "1.2rem", marginBottom: 4 }}>{t.icon}</div>
-              <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--text-primary)" }}>{t.name}</div>
-              <div style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>{t.spec}</div>
+              <div style={{ fontSize: 16, marginBottom: 2 }}>{t.icon}</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: on ? S.acc : S.t1 }}>{t.name}</div>
+              <div style={{ fontSize: 8.5, color: S.t3 }}>{t.spec}</div>
             </button>
-          ))}
-        </div>
+          );
+        })}
       </div>
 
-      {/* Asset Upload */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>Assets</div>
-        <div style={{
-          padding: 24, background: "var(--bg-secondary)", border: "1px dashed var(--border)",
-          borderRadius: 12, textAlign: "center", cursor: "pointer", marginBottom: 12,
-        }}>
-          <div style={{ fontSize: "1.5rem", opacity: 0.3, marginBottom: 4 }}>{"\u{1F4C1}"}</div>
-          <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Drop files or click to upload</div>
-          <div style={{ fontSize: "0.65rem", color: "rgba(255,255,255,0.3)", marginTop: 4 }}>Video, images, audio — up to 500MB</div>
-        </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {assets.map((a, i) => (
-            <span key={i} style={{
-              padding: "4px 10px", borderRadius: 6, fontSize: "0.7rem", fontWeight: 600,
-              background: i === 0 ? "rgba(16,185,129,0.08)" : i === 1 ? "rgba(0,136,255,0.08)" : "rgba(136,85,255,0.08)",
-              color: i === 0 ? "#10b981" : i === 1 ? "#0088ff" : "#8855ff",
-            }}>
-              {a}
-            </span>
-          ))}
-        </div>
+      {/* Assets */}
+      <label style={{ display: "block", fontSize: 9.5, fontWeight: 600, color: S.t3, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.04em" }}>Assets</label>
+      <div style={{
+        padding: 16, background: S.bg3, border: `1px dashed ${S.bdr2}`, borderRadius: S.r2,
+        textAlign: "center", marginBottom: 12, cursor: "pointer",
+      }}>
+        <div style={{ fontSize: 24, opacity: 0.4, marginBottom: 4 }}>📁</div>
+        <div style={{ fontSize: 11, color: S.t3 }}>Drop files or click to upload</div>
+        <div style={{ fontSize: 9, color: S.t4, marginTop: 2 }}>Video, images, audio — up to 500MB</div>
+      </div>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+        <span style={{ padding: "2px 7px", borderRadius: 4, fontSize: 8.5, fontWeight: 600, background: "var(--color-acc-glow)", color: S.acc, fontFamily: S.mono }}>hero-shot.mp4 (4.2MB)</span>
+        <span style={{ padding: "2px 7px", borderRadius: 4, fontSize: 8.5, fontWeight: 600, background: "rgba(0,136,255,.08)", color: S.blu, fontFamily: S.mono }}>logo.png (120KB)</span>
+        <span style={{ padding: "2px 7px", borderRadius: 4, fontSize: 8.5, fontWeight: 600, background: "rgba(136,85,255,.08)", color: S.pur, fontFamily: S.mono }}>bgm.mp3 (2.1MB)</span>
       </div>
 
       {/* Scene Configuration */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>Scene Configuration</div>
-        {scenes.map((scene) => (
-          <div key={scene.id} style={{
-            padding: 14, background: "var(--bg-secondary)", border: "1px solid var(--border)",
-            borderRadius: 10, marginBottom: 10,
-          }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <span style={{ fontSize: "0.85rem", fontWeight: 700 }}>{scene.name}</span>
-              <span style={{ padding: "2px 8px", borderRadius: 4, fontSize: "0.65rem", background: "var(--bg-tertiary)", color: "var(--text-muted)" }}>{scene.timeRange}</span>
-            </div>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {scene.chips.map((chip, i) => (
-                <span key={i} style={{ padding: "3px 8px", borderRadius: 4, fontSize: "0.65rem", background: "var(--bg-tertiary)", color: "var(--text-muted)" }}>
-                  {chip}
-                </span>
-              ))}
-            </div>
+      <label style={{ display: "block", fontSize: 9.5, fontWeight: 600, color: S.t3, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.04em" }}>Scene Configuration</label>
+      {scenes.map(scene => (
+        <div key={scene.id} style={{
+          background: S.bg3, border: `1px solid ${S.bdr}`, borderRadius: S.r1, padding: 10, marginBottom: 10,
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <span style={{ fontSize: 11, fontWeight: 600 }}>{scene.name}</span>
+            <span style={{ padding: "2px 6px", borderRadius: 4, fontSize: 8.5, background: S.bg4, color: S.t3, fontFamily: S.mono }}>{scene.time}</span>
           </div>
-        ))}
-        <div style={{ display: "flex", gap: 10 }}>
-          <button style={{
-            padding: "10px 24px", borderRadius: 8, fontSize: "0.85rem", fontWeight: 600,
-            background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "white", border: "none", cursor: "pointer",
-          }}>
-            {"\u25B6"} Render
-          </button>
-          <button onClick={addScene} style={{
-            padding: "10px 24px", borderRadius: 8, fontSize: "0.85rem", fontWeight: 600,
-            background: "var(--bg-secondary)", color: "var(--text-secondary)", border: "1px solid var(--border)", cursor: "pointer",
-          }}>
-            + Add Scene
-          </button>
+          <div style={{ display: "flex", gap: 6, fontSize: 9, color: S.t3, flexWrap: "wrap" }}>
+            {scene.chips.map((chip, i) => (
+              <span key={i} style={{ padding: "2px 6px", background: S.bg4, borderRadius: 4 }}>{chip}</span>
+            ))}
+          </div>
         </div>
+      ))}
+      <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+        <button style={{
+          padding: "8px 16px", borderRadius: S.r1, fontSize: 11, fontWeight: 600, cursor: "pointer",
+          background: S.acc, color: "#000", border: "none", fontFamily: "inherit",
+        }}>▶ Render</button>
+        <button onClick={addScene} style={{
+          padding: "8px 16px", borderRadius: S.r1, fontSize: 11, fontWeight: 600, cursor: "pointer",
+          background: S.bg4, color: S.t2, border: `1px solid ${S.bdr}`, fontFamily: "inherit",
+        }}>+ Add Scene</button>
       </div>
     </div>
   );
