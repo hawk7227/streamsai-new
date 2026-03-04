@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import ToolGrid from "@/components/studio/ToolGrid";
+import ToolRail from "@/components/studio/ToolRail";
 import StudioExecutionModeBar from "@/components/studio/StudioExecutionModeBar";
 import PromptPanel from "@/components/studio/PromptPanel";
 import StudioSafeZonePanel from "@/components/studio/StudioSafeZonePanel";
@@ -102,7 +102,12 @@ export default function GeneratePage() {
   }, []);
 
   return (
-    <div className="animate-fade-up">
+    <div className="flex gap-0 animate-fade-up" style={{ minHeight: "calc(100vh - 48px)" }}>
+      {/* Tool Rail — far left */}
+      <ToolRail selected={selectedTool} onSelect={setSelectedTool} />
+
+      {/* Workspace — takes all remaining space */}
+      <div className="flex-1 min-w-0 pl-4">
       {/* Header */}
       <div className="flex justify-between items-start mb-2">
         <div>
@@ -139,9 +144,6 @@ export default function GeneratePage() {
 
       {/* Execution Mode */}
       <StudioExecutionModeBar mode={execMode} onChange={setExecMode} />
-
-      {/* Tool Grid */}
-      <ToolGrid selected={selectedTool} onSelect={setSelectedTool} />
 
       {/* Prompt Panel */}
       <PromptPanel
@@ -241,6 +243,7 @@ export default function GeneratePage() {
       <div className="mt-3">
         <OutputGallery jobs={jobs} />
       </div>
+      </div>{/* end workspace */}
     </div>
   );
 }
