@@ -102,6 +102,52 @@ export default function Sidebar({
     }
   };
 
+
+  // ── Nav helper ──
+  const navItem = (item: { name: string; href: string; icon: string; badge?: string }) => {
+    const active = isActive(item.href);
+    return (
+      <Link
+        key={item.name}
+        href={item.href}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: collapsed ? 0 : 10,
+          padding: collapsed ? "8px 0" : "8px 16px",
+          justifyContent: collapsed ? "center" : "flex-start",
+          fontSize: "11.5px",
+          fontWeight: 500,
+          color: active ? "var(--color-acc)" : "var(--color-t-3)",
+          background: active ? "var(--color-acc-glow)" : "transparent",
+          borderLeft: `2px solid ${active ? "var(--color-acc)" : "transparent"}`,
+          cursor: "pointer",
+          transition: "all 150ms",
+          textDecoration: "none",
+        }}
+        title={collapsed ? item.name : undefined}
+      >
+        <span style={{ fontStyle: "normal", fontSize: 13, width: 18, textAlign: "center", flexShrink: 0 }}>{item.icon}</span>
+        {!collapsed && <span>{item.name}</span>}
+        {!collapsed && item.badge && (
+          <span style={{
+            marginLeft: "auto", fontSize: 8, padding: "1px 5px", borderRadius: 4, fontWeight: 700,
+            background: "rgba(0,136,255,0.12)", color: "var(--color-blu)",
+          }}>{item.badge}</span>
+        )}
+      </Link>
+    );
+  };
+
+  const sectionLabel = (label: string) => {
+    if (collapsed) return null;
+    return (
+      <div style={{ padding: "14px 16px 4px", fontSize: "7.5px", fontWeight: 700, color: "var(--color-t-4)", textTransform: "uppercase" as const, letterSpacing: "0.1em" }}>
+        {label}
+      </div>
+    );
+  };
+
   return (
     <>
       {/* Overlay */}
@@ -113,256 +159,95 @@ export default function Sidebar({
       )}
 
       <aside
-        className={`fixed top-0 left-0 bottom-0 ${collapsed ? "w-[48px]" : "w-[260px]"} bg-bg-secondary border-r border-border-color flex flex-col z-50 transition-all duration-200 ${
+        className={`fixed top-0 left-0 bottom-0 flex flex-col z-50 transition-all duration-200 ${
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
+        style={{
+          width: collapsed ? 48 : 220,
+          minWidth: collapsed ? 48 : 220,
+          background: "var(--color-bg-1)",
+          borderRight: "1px solid var(--color-bdr)",
+        }}
       >
-        <div className={`${collapsed ? "p-2" : "p-5"} border-b border-border-color flex items-center justify-between`}>
-          <Link href="/" className={`flex items-center ${collapsed ? "justify-center w-full" : "gap-3"}`}>
-            <div className="w-8 h-8 bg-gradient-to-br from-accent-indigo to-accent-purple rounded-lg flex items-center justify-center text-white flex-shrink-0">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                className="w-4 h-4"
-              >
-                <path d="M12 3l1.912 5.813a2 2 0 001.272 1.272L21 12l-5.816 1.915a2 2 0 00-1.272 1.272L12 21l-1.912-5.813a2 2 0 00-1.272-1.272L3 12l5.816-1.915a2 2 0 001.272-1.272L12 3z" />
-              </svg>
+        {/* Logo */}
+        <div className="flex items-center gap-2.5" style={{ padding: collapsed ? "12px 8px" : "16px", borderBottom: "1px solid var(--color-bdr)" }}>
+          <div
+            className="flex-shrink-0 grid place-items-center font-black"
+            style={{
+              width: 28, height: 28, borderRadius: 8, fontSize: 11,
+              background: "linear-gradient(135deg, var(--color-acc), var(--color-blu))",
+              color: "#000",
+            }}
+          >▶</div>
+          {!collapsed && (
+            <div className="min-w-0 flex-1">
+              <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "-0.3px" }}>StreamsAI</div>
+              <div style={{ fontSize: 8, fontWeight: 500, color: "var(--color-t-3)", letterSpacing: "0.03em" }}>VIDEO ENGINE</div>
             </div>
-            {!collapsed && <span className="text-xl font-bold">StreamsAI</span>}
-          </Link>
+          )}
           {!collapsed && (
             <button
               onClick={onToggleCollapse}
-              className="hidden lg:flex w-6 h-6 items-center justify-center rounded-md hover:bg-bg-tertiary text-text-muted transition-colors"
+              className="hidden lg:block"
               title="Collapse sidebar"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-                <polyline points="11 17 6 12 11 7" /><polyline points="18 17 13 12 18 7" />
-              </svg>
-            </button>
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-t-3)", fontSize: 11, padding: 0 }}
+            >{"\u00AB"}</button>
           )}
         </div>
         {collapsed && (
           <button
             onClick={onToggleCollapse}
-            className="hidden lg:flex w-full py-2 items-center justify-center hover:bg-bg-tertiary text-text-muted transition-colors"
+            className="hidden lg:flex w-full items-center justify-center py-2"
             title="Expand sidebar"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-              <polyline points="13 17 18 12 13 7" /><polyline points="6 17 11 12 6 7" />
-            </svg>
-          </button>
+            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-t-3)", fontSize: 11 }}
+          >{"\u00BB"}</button>
         )}
 
-        <nav className={`flex-1 ${collapsed ? "p-1" : "p-3"} overflow-y-auto space-y-5 ${collapsed ? "overflow-x-hidden" : ""}`}>
-          {/* Top links */}
-          <div className="space-y-1">
-            {[
-              { name: "Dashboard", href: "/dashboard", icon: <><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></> },
-              { name: "Generate", href: "/dashboard/generate", icon: <path d="M12 3l1.912 5.813a2 2 0 001.272 1.272L21 12l-5.816 1.915a2 2 0 00-1.272 1.272L12 21l-1.912-5.813a2 2 0 00-1.272-1.272L3 12l5.816-1.915a2 2 0 001.272-1.272L12 3z" /> },
-              { name: "Pipelines", href: "/pipelines", icon: <><circle cx="12" cy="12" r="10" /><polygon points="10 8 16 12 10 16 10 8" /></> },
-            ].map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-[8px] text-[13px] overflow-hidden font-medium transition-colors ${
-                  isActive(item.href)
-                    ? "bg-accent/10 text-accent"
-                    : "text-text-secondary hover:bg-bg-tertiary hover:text-white"
-                }`}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-[18px] h-[18px] flex-shrink-0">{item.icon}</svg>
-                {item.name}
-              </Link>
-            ))}
-          </div>
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto" style={{ padding: collapsed ? "4px 0" : "8px 0" }}>
+          {sectionLabel("Create")}
+          {navItem({ name: "AI Media Studio", href: "/dashboard/generate", icon: "✦", badge: "10 tools" })}
+          {navItem({ name: "Composition Studio", href: "/dashboard/compose", icon: "🎬" })}
+          {navItem({ name: "Preview", href: "/dashboard/preview", icon: "👁" })}
+          {navItem({ name: "Video Editor", href: "/dashboard/editor", icon: "✂️" })}
+          {navItem({ name: "Script Editor", href: "/dashboard/script", icon: "📝" })}
+          {navItem({ name: "Characters", href: "/dashboard/characters", icon: "👤" })}
 
-          {/* Content Generation */}
-          <div>
-            <div className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-text-muted overflow-hidden whitespace-nowrap">
-              Content Generation
-            </div>
-            <div className="space-y-0.5">
-              {[
-                { name: "Script Writer", desc: "Claude, GPT-4", href: "/dashboard/script", icon: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></> },
-                { name: "Voice Generator", desc: "ElevenLabs, OpenAI TTS", href: "/dashboard/voice", icon: <><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /></> },
-                { name: "Image Generator", desc: "DALL-E 3, FLUX, Stability", href: "/dashboard/image", icon: <><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></> },
-                { name: "Video Generator", desc: "Veo 3, Sora, Runway", href: "/dashboard/video", icon: <><polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" /></> },
-              ].map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-[8px] transition-colors overflow-hidden ${
-                    isActive(item.href)
-                      ? "bg-accent/10 text-accent"
-                      : "text-text-secondary hover:bg-bg-tertiary hover:text-white"
-                  }`}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-[18px] h-[18px] flex-shrink-0">{item.icon}</svg>
-                  <div className="min-w-0">
-                    <div className="text-[13px] font-medium leading-tight">{item.name}</div>
-                    <div className="text-[10px] text-text-muted leading-tight truncate">{item.desc}</div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
+          {sectionLabel("Pipeline")}
+          {navItem({ name: "Pipelines", href: "/pipelines", icon: "⬡" })}
 
-          {/* Content */}
-          <div>
-            <div className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-text-muted overflow-hidden whitespace-nowrap">
-              Content
-            </div>
-            <div className="space-y-0.5">
-              {[
-                { name: "History", href: "/dashboard/renders", icon: <><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></> },
-                { name: "Library", href: "/dashboard/library", icon: <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /> },
-              ].map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-[8px] text-[13px] overflow-hidden font-medium transition-colors ${
-                    isActive(item.href)
-                      ? "bg-accent/10 text-accent"
-                      : "text-text-secondary hover:bg-bg-tertiary hover:text-white"
-                  }`}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-[18px] h-[18px] flex-shrink-0">{item.icon}</svg>
-                  {item.name}
-                </Link>
-              ))}
-            </div>
-          </div>
+          {sectionLabel("Dashboard")}
+          {navItem({ name: "Renders", href: "/dashboard/renders", icon: "◫", badge: "3 active" })}
+          {navItem({ name: "Library", href: "/dashboard/library", icon: "📁" })}
 
-          {/* Post-Processing */}
-          <div>
-            <div className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-text-muted overflow-hidden whitespace-nowrap">
-              Post-Processing
-            </div>
-            <div className="space-y-0.5">
-              {[
-                { name: "Video Editor", desc: "JSON2Video, Shotstack", href: "/dashboard/editor", icon: <><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></> },
-                { name: "Image Editor", desc: "Resize, filter, watermark", href: "/dashboard/compose", icon: <><rect x="3" y="3" width="18" height="18" rx="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" /></> },
-              ].map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-[8px] transition-colors overflow-hidden ${
-                    isActive(item.href)
-                      ? "bg-accent/10 text-accent"
-                      : "text-text-secondary hover:bg-bg-tertiary hover:text-white"
-                  }`}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-[18px] h-[18px] flex-shrink-0">{item.icon}</svg>
-                  <div className="min-w-0">
-                    <div className="text-[13px] font-medium leading-tight">{item.name}</div>
-                    <div className="text-[10px] text-text-muted leading-tight truncate">{item.desc}</div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
+          {sectionLabel("Connect")}
+          {navItem({ name: "Integrations", href: "/dashboard/analytics", icon: "🔌" })}
+          {navItem({ name: "Social Posting", href: "/dashboard/social", icon: "📤" })}
 
-          {/* Actions */}
-          <div>
-            <div className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-text-muted overflow-hidden whitespace-nowrap">
-              Actions
-            </div>
-            <div className="space-y-0.5">
-              {[
-                { name: "Export", desc: "Save to library / download", href: "/dashboard/preview", icon: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></> },
-                { name: "Webhook", desc: "Send to external service", href: "/dashboard/settings", icon: <><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></> },
-              ].map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-[8px] transition-colors overflow-hidden ${
-                    isActive(item.href)
-                      ? "bg-accent/10 text-accent"
-                      : "text-text-secondary hover:bg-bg-tertiary hover:text-white"
-                  }`}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-[18px] h-[18px] flex-shrink-0">{item.icon}</svg>
-                  <div className="min-w-0">
-                    <div className="text-[13px] font-medium leading-tight">{item.name}</div>
-                    <div className="text-[10px] text-text-muted leading-tight truncate">{item.desc}</div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          {/* System */}
-          <div>
-            <div className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-text-muted overflow-hidden whitespace-nowrap">
-              System
-            </div>
-            <div className="space-y-0.5">
-              {[
-                { name: "Integrations", href: "/dashboard/analytics" },
-                { name: "Settings", href: "/dashboard/settings" },
-              ].map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-[8px] text-[13px] overflow-hidden font-medium transition-colors ${
-                    isActive(item.href)
-                      ? "bg-accent/10 text-accent"
-                      : "text-text-secondary hover:bg-bg-tertiary hover:text-white"
-                  }`}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-[18px] h-[18px] flex-shrink-0">
-                    {item.name === "Integrations" && <><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></>}
-                    {item.name === "Settings" && <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></>}
-                  </svg>
-                  {item.name}
-                </Link>
-              ))}
-            </div>
-          </div>
+          {sectionLabel("System")}
+          {navItem({ name: "System Status", href: "/system-status", icon: "🩺" })}
+          {navItem({ name: "Settings", href: "/dashboard/settings", icon: "⚙️" })}
+          {navItem({ name: "AI Copilot", href: "/dashboard/copilot", icon: "🤖" })}
         </nav>
 
-        <div className={`${collapsed ? "p-1" : "p-3"} border-t border-border-color overflow-hidden`}>
-          {!collapsed && (
-            <div className="bg-bg-tertiary rounded-lg p-3 mb-2">
-              <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted mb-2">
-                Credits
+        {/* Footer — Credits */}
+        <div style={{ padding: collapsed ? "8px 6px" : "12px 16px", borderTop: "1px solid var(--color-bdr)" }}>
+          {!collapsed ? (
+            <>
+              <div style={{ fontSize: 8, fontWeight: 600, color: "var(--color-t-3)", marginBottom: 4 }}>CREDITS</div>
+              <div style={{ height: 3, background: "var(--color-bg-5)", borderRadius: 2, overflow: "hidden", marginBottom: 4 }}>
+                <div style={{ height: "100%", background: "linear-gradient(90deg, var(--color-acc), var(--color-blu))", borderRadius: 2, width: `${usagePercent}%` }} />
               </div>
-              <div className="flex justify-between items-baseline mb-2">
-                <span className="text-[18px] font-bold">{generationsUsed}</span>
-                <span className="text-[13px] text-text-muted">{typeof generationLimit === 'number' ? generationLimit.toLocaleString() : generationLimit}</span>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "var(--color-t-3)", fontWeight: 600 }}>
+                <span>{generationsUsed.toLocaleString()}</span>
+                <span>{typeof generationLimit === "number" ? generationLimit.toLocaleString() : generationLimit}</span>
               </div>
-              <div className="h-1.5 bg-bg-primary rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-accent-indigo to-accent-purple"
-                  style={{ width: `${usagePercent}%` }}
-                />
-              </div>
-            </div>
-          )}
-          {collapsed && (
-            <div className="flex items-center justify-center py-1 text-[10px] font-bold text-text-muted" title={`${generationsUsed} / ${generationLimit}`}>
+            </>
+          ) : (
+            <div style={{ textAlign: "center", fontSize: 8, fontWeight: 700, color: "var(--color-t-3)" }} title={`${generationsUsed} / ${generationLimit}`}>
               {generationsUsed}
             </div>
           )}
-          <button
-            type="button"
-            onClick={() => setIsPlanModalOpen(true)}
-            className={`w-full flex items-center justify-center ${collapsed ? "p-2" : "gap-2 p-2.5"} bg-gradient-to-r from-accent-indigo to-accent-purple text-white rounded-[10px] text-[13px] font-semibold transition-all hover:shadow-[0_4px_15px_rgba(99,102,241,0.3)]`}
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="w-4 h-4 flex-shrink-0"
-            >
-              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-            </svg>
-            {!collapsed && "View Plans"}
-          </button>
         </div>
       </aside>
 
