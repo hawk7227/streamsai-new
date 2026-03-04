@@ -65,8 +65,8 @@ export default function ContentToolSidebar({ collapsed, onToggle, onToolClick }:
   return (
     <div
       style={{
-        width: 260,
-        minWidth: 260,
+        width: 200,
+        minWidth: 200,
         flexShrink: 0,
         background: "var(--color-bg-2)",
         borderRight: "1px solid var(--color-bdr)",

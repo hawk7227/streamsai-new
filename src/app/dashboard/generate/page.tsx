@@ -71,7 +71,7 @@ export default function GeneratePage() {
   return (
     <div
       className="animate-fade-up"
-      style={{ display: "flex", height: "calc(100vh - 48px)", margin: "-16px -24px", overflow: "hidden" }}
+      style={{ display: "flex", height: "calc(100vh - 48px)", margin: "-16px -24px -16px -16px", overflow: "hidden" }}
     >
       {/* Content Tool Sidebar — left */}
       <ContentToolSidebar
