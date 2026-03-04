@@ -6,7 +6,7 @@ import PromptPanel from "@/components/studio/PromptPanel";
 import StudioSafeZonePanel from "@/components/studio/StudioSafeZonePanel";
 import StudioPreviewGates from "@/components/studio/StudioPreviewGates";
 import OutputGallery, { type GalleryJob } from "@/components/studio/OutputGallery";
-import { TOOLS, type ToolCodename, type GateStage } from "@/components/studio/tool-data";
+import { type ToolCodename, type GateStage } from "@/components/studio/tool-data";
 
 // ── Demo data ──────────────────────────────────────────────────────────
 const DEMO_JOBS: GalleryJob[] = [
@@ -107,30 +107,6 @@ export default function GeneratePage() {
               🤖 Copilot
             </button>
           </div>
-        </div>
-
-        {/* Tool Selector Grid — compact 5-col */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6, marginBottom: 12 }}>
-          {TOOLS.map((tool) => {
-            const isActive = selectedTool === tool.codename;
-            return (
-              <button
-                key={tool.codename}
-                onClick={() => setSelectedTool(tool.codename)}
-                style={{
-                  padding: "8px 10px", borderRadius: 8, textAlign: "left",
-                  background: isActive ? "var(--color-acc-glow)" : "var(--color-bg-3)",
-                  border: `1px solid ${isActive ? "var(--color-acc)" : "var(--color-bdr)"}`,
-                  cursor: "pointer", transition: "all 150ms", fontFamily: "inherit", color: "inherit",
-                }}
-              >
-                <div style={{ fontSize: 14, marginBottom: 2 }}>{tool.icon}</div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: isActive ? "var(--color-acc)" : "var(--color-t-1)", marginBottom: 1 }}>{tool.label}</div>
-                <div style={{ fontSize: 8.5, color: "var(--color-t-3)", lineHeight: 1.3 }}>{tool.description}</div>
-                <div style={{ fontSize: 9, fontFamily: "var(--mono)", color: "var(--color-acc)", marginTop: 3 }}>{tool.cost}</div>
-              </button>
-            );
-          })}
         </div>
 
         {/* Prompt Panel */}
