@@ -1,202 +1,117 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { useAuth } from "@/contexts/AuthContext";
-import {
-  createGeneration,
-  listGenerations,
-  type GenerationRecord,
-} from "@/lib/generations";
-import { formatRelativeTime, truncateText } from "@/lib/formatters";
+import { useState } from "react";
+
+const S = {
+  bg2: "var(--color-bg-2)", bg3: "var(--color-bg-3)", bg4: "var(--color-bg-4)",
+  bdr: "var(--color-bdr)", t1: "var(--color-t-1)", t2: "var(--color-t-2)", t3: "var(--color-t-3)",
+  acc: "var(--color-acc)", mono: "'JetBrains Mono', var(--mono), monospace",
+};
+
+const SCENES = [
+  { id: "S1", name: "Hook", time: "0:00-0:03" },
+  { id: "S2", name: "Problem", time: "0:03-0:08" },
+  { id: "S3", name: "Solution", time: "0:08-0:18" },
+  { id: "S4", name: "Social", time: "0:18-0:24" },
+  { id: "S5", name: "CTA", time: "0:24-0:30" },
+];
+
+const SCRIPT = `SCENE 1 - HOOK (0:00-0:03)
+[WIDE] Creator at blank screen.
+VO: Creating video shouldn't take hours.
+---
+SCENE 2 - PROBLEM (0:03-0:08)
+[MONTAGE] Traditional editing timeline.
+VO: Traditional tools slow you down.
+---
+SCENE 3 - SOLUTION (0:08-0:18)
+[SCREEN REC] StreamsAI dashboard. Prompt, video generates.
+VO: Professional video from a single prompt.
+---
+SCENE 4 - SOCIAL (0:18-0:24)
+[SPLIT] Posting to Instagram, TikTok, YouTube.
+VO: Post everywhere. Automatically.
+---
+SCENE 5 - CTA (0:24-0:30)
+[LOGO] StreamsAI. VO: Start creating. For free.`;
+
+const btn = (primary?: boolean) => ({
+  padding: "5px 12px", borderRadius: 5, fontSize: 9, fontWeight: 700 as const, cursor: "pointer" as const,
+  background: primary ? S.acc : S.bg4, color: primary ? "#000" : S.t2,
+  border: primary ? "none" : `1px solid ${S.bdr}`, fontFamily: "inherit",
+});
 
 export default function ScriptPage() {
-  const { usage, usageLoading, incrementUsage } = useAuth();
-  const [prompt, setPrompt] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [usageError, setUsageError] = useState("");
-  const [historyItems, setHistoryItems] = useState<GenerationRecord[]>([]);
-  const [historyLoading, setHistoryLoading] = useState(true);
-  const [historyError, setHistoryError] = useState("");
-
-  const isLimitReached =
-    typeof usage?.limit === "number" && usage.used >= usage.limit;
-
-  const handleGenerate = async () => {
-    if (isLimitReached || usageLoading || isGenerating) {
-      return;
-    }
-
-    if (!prompt.trim()) {
-      setUsageError("Please enter a prompt.");
-      return;
-    }
-
-    setUsageError("");
-    setIsGenerating(true);
-
-    const { error } = await incrementUsage(1);
-    if (error) {
-      setUsageError(error);
-      setIsGenerating(false);
-      return;
-    }
-
-    try {
-      const created = await createGeneration({
-        type: "script",
-        prompt,
-        title: truncateText(prompt, 48),
-      });
-      setHistoryItems((prev) => [created, ...prev]);
-    } catch (createError) {
-      setUsageError(
-        createError instanceof Error
-          ? createError.message
-          : "Unable to save generation"
-      );
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const tabs = [
-    { id: "script", label: "Script", icon: "📝" },
-    { id: "voice", label: "Voice", icon: "🎙️" },
-    { id: "image", label: "Image", icon: "🖼️" },
-    { id: "video", label: "Video", icon: "🎬" },
-  ];
-
-  useEffect(() => {
-    let isMounted = true;
-    setHistoryLoading(true);
-    setHistoryError("");
-
-    listGenerations({ type: "script", limit: 8 })
-      .then((data) => {
-        if (isMounted) {
-          setHistoryItems(data);
-        }
-      })
-      .catch((error) => {
-        if (isMounted) {
-          setHistoryError(
-            error instanceof Error ? error.message : "Unable to load history"
-          );
-        }
-      })
-      .finally(() => {
-        if (isMounted) {
-          setHistoryLoading(false);
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const [brief, setBrief] = useState("30s product launch for StreamsAI. Show platform generating content. End with CTA.");
+  const [script, setScript] = useState(SCRIPT);
 
   return (
-    <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8">
-      <div className="space-y-6">
-        {/* Product Tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-2">
-          {tabs.map((tab) => (
-            <Link
-              key={tab.id}
-              href={`/dashboard/${tab.id}`}
-              className={`flex items-center gap-2 px-5 py-3 rounded-xl border text-sm font-medium whitespace-nowrap transition-all ${
-                tab.id === "script"
-                  ? "border-accent-indigo bg-accent-indigo/10 text-accent-indigo"
-                  : "border-border-color bg-bg-secondary text-text-secondary hover:border-accent-indigo/50"
-              }`}
-            >
-              <span className="text-xl">{tab.icon}</span> {tab.label}
-            </Link>
-          ))}
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+        <div>
+          <h1 style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-0.4px", marginBottom: 2 }}>📝 Script Editor</h1>
+          <p style={{ fontSize: 11.5, color: S.t2 }}>AI script generation to storyboard to video. End-to-end pipeline.</p>
         </div>
-
-        {/* Main Generation Panel */}
-        <div className="bg-bg-secondary border border-border-color rounded-2xl overflow-hidden">
-          <div className="px-6 py-5 border-b border-border-color flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-emerald to-accent-blue flex items-center justify-center">
-                📝
-              </div>
-              <span className="font-semibold">Script Generation</span>
-            </div>
-          </div>
-
-          <div className="p-6 space-y-6">
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <span>✨</span> Describe your script
-                </div>
-                <span className="text-xs text-text-muted">
-                  {prompt.length} / 2000
-                </span>
-              </div>
-              <textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                className="w-full h-48 px-4 py-4 rounded-xl border border-border-color bg-bg-tertiary text-white text-[15px] leading-relaxed resize-none focus:outline-none focus:border-accent-indigo placeholder-text-muted"
-                placeholder="What kind of script do you need? (e.g., blog post, video script, social media content...)"
-                maxLength={2000}
-              />
-            </div>
-
-            <button
-              type="button"
-              onClick={handleGenerate}
-              disabled={isLimitReached || usageLoading || isGenerating}
-              className="w-full py-4 rounded-xl bg-gradient-to-r from-accent-emerald to-accent-blue text-white font-semibold flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-accent-emerald/30 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {isLimitReached
-                ? "Limit Reached"
-                : isGenerating
-                ? "Generating..."
-                : "✨ Generate Script"}
-            </button>
-            {usageError && (
-              <p className="text-xs text-accent-red">{usageError}</p>
-            )}
-          </div>
-        </div>
+        <button style={{ ...btn(true), padding: "8px 16px", fontSize: 11 }}>Generate Storyboard</button>
       </div>
 
-      <div className="space-y-6">
-        <div className="bg-bg-secondary border border-border-color rounded-2xl p-4">
-          <h3 className="text-sm font-medium mb-3">Recent Scripts</h3>
-          {historyLoading && (
-            <p className="text-xs text-text-muted">Loading scripts...</p>
-          )}
-          {!historyLoading && historyError && (
-            <p className="text-xs text-accent-red">{historyError}</p>
-          )}
-          {!historyLoading && !historyError && historyItems.length === 0 && (
-            <p className="text-xs text-text-muted">No scripts yet</p>
-          )}
-          {!historyLoading &&
-            !historyError &&
-            historyItems.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center gap-3 py-2 border-b border-white/[0.05] last:border-0"
-              >
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-accent-emerald/20 to-accent-blue/20 flex items-center justify-center">
-                  📝
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium truncate">
-                    {truncateText(item.title ?? item.prompt, 40)}
-                  </p>
-                  <p className="text-[10px] text-text-muted">
-                    {formatRelativeTime(item.created_at)}
-                  </p>
-                </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 230px", gap: 12 }}>
+        {/* Left — Editor */}
+        <div>
+          <label style={{ display: "block", fontSize: 9.5, fontWeight: 600, color: S.t3, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.04em" }}>Brief</label>
+          <textarea
+            rows={2}
+            value={brief}
+            onChange={e => setBrief(e.target.value)}
+            style={{ width: "100%", padding: "7px 10px", background: S.bg3, border: `1px solid ${S.bdr}`, borderRadius: 7, color: S.t1, fontSize: 10, resize: "vertical", fontFamily: "inherit", marginBottom: 8 }}
+          />
+          <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+            <button style={btn(true)}>AI Generate</button>
+            <button style={btn()}>Templates</button>
+            <button style={btn()}>Import</button>
+          </div>
+          <label style={{ display: "block", fontSize: 9.5, fontWeight: 600, color: S.t3, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.04em" }}>Script (split on ---)</label>
+          <textarea
+            rows={12}
+            value={script}
+            onChange={e => setScript(e.target.value)}
+            style={{ width: "100%", padding: "7px 10px", background: S.bg3, border: `1px solid ${S.bdr}`, borderRadius: 7, color: S.t1, fontSize: 10, lineHeight: 1.7, resize: "vertical", fontFamily: S.mono }}
+          />
+          <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+            <button style={btn()}>Auto Captions</button>
+            <button style={btn()}>B-Roll</button>
+            <button style={btn()}>Translate</button>
+          </div>
+        </div>
+
+        {/* Right — Scenes + Settings */}
+        <div>
+          <label style={{ display: "block", fontSize: 9.5, fontWeight: 600, color: S.t3, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.04em" }}>Scenes</label>
+          {SCENES.map(s => (
+            <div key={s.id} style={{ padding: 5, background: S.bg3, border: `1px solid ${S.bdr}`, borderRadius: 5, marginBottom: 4 }}>
+              <div style={{ fontSize: 9, fontWeight: 600 }}>{s.id} {s.name}</div>
+              <div style={{ fontSize: 7, color: S.t3 }}>{s.time}</div>
+            </div>
+          ))}
+
+          <label style={{ display: "block", fontSize: 9.5, fontWeight: 600, color: S.t3, marginBottom: 4, marginTop: 8, textTransform: "uppercase", letterSpacing: "0.04em" }}>Settings</label>
+          <div style={{ fontSize: 8, color: S.t3, display: "flex", flexDirection: "column", gap: 3 }}>
+            {[
+              { label: "Lang", options: ["English", "Spanish", "French", "Japanese"] },
+              { label: "Voice", options: ["Rachel", "Josh", "Bella"] },
+              { label: "B-Roll", options: ["AI Gen", "Stock", "Upload"] },
+            ].map(row => (
+              <div key={row.label} style={{ display: "flex", justifyContent: "space-between", padding: "3px 5px", background: S.bg3, borderRadius: 3, alignItems: "center" }}>
+                <span>{row.label}</span>
+                <select style={{ width: 60, padding: 2, fontSize: 8, background: S.bg4, border: `1px solid ${S.bdr}`, borderRadius: 3, color: S.t1 }}>
+                  {row.options.map(o => <option key={o}>{o}</option>)}
+                </select>
               </div>
             ))}
+            <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 5px", background: S.bg3, borderRadius: 3 }}>
+              <span>Captions</span><span style={{ color: S.acc }}>On</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

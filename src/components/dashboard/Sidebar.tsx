@@ -221,7 +221,7 @@ export default function Sidebar({
           {navItem({ name: "Library", href: "/dashboard/library", icon: "📁" })}
 
           {sectionLabel("Connect")}
-          {navItem({ name: "Integrations", href: "/dashboard/analytics", icon: "🔌" })}
+          {navItem({ name: "Integrations", href: "/dashboard/integrations", icon: "🔌" })}
           {navItem({ name: "Social Posting", href: "/dashboard/social", icon: "📤" })}
 
           {sectionLabel("System")}
