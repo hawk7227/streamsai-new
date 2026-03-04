@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import ToolRail from "@/components/studio/ToolRail";
 import PromptPanel from "@/components/studio/PromptPanel";
 import StudioSafeZonePanel from "@/components/studio/StudioSafeZonePanel";
 import StudioPreviewGates from "@/components/studio/StudioPreviewGates";
 import OutputGallery, { type GalleryJob } from "@/components/studio/OutputGallery";
-import type { ToolCodename, GateStage } from "@/components/studio/tool-data";
+import { TOOLS, type ToolCodename, type GateStage } from "@/components/studio/tool-data";
 
 // ── Demo data ──────────────────────────────────────────────────────────
 const DEMO_JOBS: GalleryJob[] = [
@@ -20,6 +19,7 @@ const DEMO_JOBS: GalleryJob[] = [
 // ── Page ────────────────────────────────────────────────────────────────
 export default function GeneratePage() {
   const [selectedTool, setSelectedTool] = useState<ToolCodename>("PHOENIX");
+  const [toolsExpanded, setToolsExpanded] = useState(true);
   const [prompt, setPrompt] = useState(
     "Cinematic aerial shot of a futuristic city at sunset, neon lights, flying vehicles, 4K"
   );
@@ -70,12 +70,7 @@ export default function GeneratePage() {
   }, []);
 
   return (
-    <div className="flex gap-0 animate-fade-up" style={{ minHeight: "calc(100vh - 48px)" }}>
-      {/* Tool Rail — far left */}
-      <ToolRail selected={selectedTool} onSelect={setSelectedTool} />
-
-      {/* Workspace — takes all remaining space */}
-      <div className="flex-1 min-w-0 pl-4">
+    <div className="animate-fade-up">
       {/* Header */}
       <div className="flex justify-between items-start mb-2">
         <div>
@@ -108,6 +103,48 @@ export default function GeneratePage() {
             🤖 Copilot
           </button>
         </div>
+      </div>
+
+      {/* Collapsible Tool Grid */}
+      <div className="mb-2">
+        <button
+          onClick={() => setToolsExpanded(!toolsExpanded)}
+          className="flex items-center gap-1.5 mb-1.5"
+          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-t-3)", fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", padding: 0 }}
+        >
+          <span style={{ fontSize: 7, opacity: 0.6 }}>{toolsExpanded ? "▼" : "▶"}</span>
+          Tools — {TOOLS.find(t => t.codename === selectedTool)?.label ?? selectedTool}
+          <span style={{ color: "var(--color-acc)", fontFamily: "var(--mono)", fontSize: 9 }}>
+            {TOOLS.find(t => t.codename === selectedTool)?.cost}
+          </span>
+        </button>
+        {toolsExpanded && (
+          <div className="grid grid-cols-5 gap-[6px]">
+            {TOOLS.map((tool) => {
+              const isActive = selectedTool === tool.codename;
+              return (
+                <button
+                  key={tool.codename}
+                  onClick={() => setSelectedTool(tool.codename)}
+                  className="text-left transition-all"
+                  style={{
+                    padding: "8px 10px",
+                    borderRadius: 8,
+                    background: isActive ? "var(--color-acc-glow)" : "var(--color-bg-3)",
+                    border: `1px solid ${isActive ? "var(--color-acc)" : "var(--color-bdr)"}`,
+                    cursor: "pointer",
+                    transition: "all 150ms",
+                  }}
+                >
+                  <div style={{ fontSize: 14, marginBottom: 2 }}>{tool.icon}</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: isActive ? "var(--color-acc)" : "var(--color-t-1)", marginBottom: 1 }}>{tool.label}</div>
+                  <div style={{ fontSize: 8.5, color: "var(--color-t-3)", lineHeight: 1.3 }}>{tool.description}</div>
+                  <div style={{ fontSize: 9, fontFamily: "var(--mono)", color: "var(--color-acc)", marginTop: 3 }}>{tool.cost}</div>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Prompt Panel */}
@@ -192,7 +229,6 @@ export default function GeneratePage() {
       <div className="mt-3">
         <OutputGallery jobs={jobs} />
       </div>
-      </div>{/* end workspace */}
     </div>
   );
 }
