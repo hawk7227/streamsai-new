@@ -90,7 +90,7 @@ export default function PromptPanel({
       )}
 
       {/* Main prompt + settings row */}
-      <div className="flex gap-3 mb-3.5 flex-wrap">
+      <div className="flex gap-3 mb-2 flex-wrap">
         {/* Prompt column */}
         <div className="flex-1 min-w-[300px]">
           <label className="block text-[9.5px] font-semibold uppercase tracking-wide mb-1" style={{ color: "var(--color-t-3)" }}>

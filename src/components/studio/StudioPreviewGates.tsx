@@ -14,7 +14,7 @@ export default function StudioPreviewGates({
   onGateClick,
 }: PreviewGatesProps) {
   return (
-    <div className="mb-3.5">
+    <div className="mb-2">
       <label
         className="block text-[9.5px] font-semibold uppercase tracking-wide mb-1"
         style={{ color: "var(--color-t-3)" }}

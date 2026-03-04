@@ -4,6 +4,7 @@ import { useState } from "react";
 import { SAFE_ZONES, TARGET_PLATFORMS } from "./tool-data";
 
 export default function StudioSafeZonePanel() {
+  const [isExpanded, setIsExpanded] = useState(false);
   const [activePlatforms, setActivePlatforms] = useState<Set<string>>(
     new Set(TARGET_PLATFORMS.filter((p) => p.defaultOn).map((p) => p.id))
   );
@@ -25,13 +26,15 @@ export default function StudioSafeZonePanel() {
     >
       {/* Header */}
       <div
-        className="py-[7px] px-[10px] flex justify-between items-center"
+        className="py-[7px] px-[10px] flex justify-between items-center cursor-pointer"
+        onClick={() => setIsExpanded(!isExpanded)}
         style={{
           background: "var(--color-bg-3)",
-          borderBottom: "1px solid var(--color-bdr)",
+          borderBottom: isExpanded ? "1px solid var(--color-bdr)" : "none",
         }}
       >
         <div className="text-[10px] font-bold">
+          <span style={{ marginRight: 4, fontSize: 8, opacity: 0.5 }}>{isExpanded ? "▼" : "▶"}</span>
           Platform Safe Zones{" "}
           <span className="text-[8px] font-normal" style={{ color: "var(--color-t-3)" }}>
             Auto content placement per platform
@@ -63,7 +66,7 @@ export default function StudioSafeZonePanel() {
         </div>
       </div>
 
-      <div className="py-2 px-[10px]">
+      <div className="py-2 px-[10px]" style={{ display: isExpanded ? "block" : "none" }}>
         {/* Target platforms */}
         <div className="text-[8px] font-semibold mb-[3px]" style={{ color: "var(--color-t-3)" }}>
           TARGET PLATFORMS (select all - generation auto-adjusts)

@@ -104,7 +104,7 @@ export default function GeneratePage() {
   return (
     <div className="animate-fade-up">
       {/* Header */}
-      <div className="flex justify-between items-start mb-4">
+      <div className="flex justify-between items-start mb-2">
         <div>
           <h1 className="text-[20px] font-extrabold tracking-tight mb-[2px]">
             ✦ AI Media Studio
@@ -156,7 +156,7 @@ export default function GeneratePage() {
       <StudioSafeZonePanel />
 
       {/* Preview Gates */}
-      <div className="mt-3.5">
+      <div className="mt-2">
         <StudioPreviewGates
           currentGate={currentGate}
           completedGates={completedGates}
@@ -165,7 +165,7 @@ export default function GeneratePage() {
       </div>
 
       {/* Action Buttons */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-3">
         <button
           onClick={handleGenerate}
           disabled={loading || !prompt.trim()}
@@ -238,7 +238,7 @@ export default function GeneratePage() {
       )}
 
       {/* Output Gallery */}
-      <div className="mt-4">
+      <div className="mt-3">
         <OutputGallery jobs={jobs} />
       </div>
     </div>
