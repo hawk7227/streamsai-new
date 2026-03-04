@@ -51,7 +51,6 @@ export default function SafeZonePanel() {
             {PLATFORM_IDS.map((id) => {
               const p = PLATFORM_SAFE_ZONES[id];
               if (!p) return null;
-              const margins = adMode ? p.ads : p.organic;
               return (
                 <tr key={id} style={{ borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
                   <td style={{ padding: "4px 6px", fontWeight: 600, color: "var(--text-primary)" }}>{p.name}</td>
