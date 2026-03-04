@@ -138,6 +138,16 @@ export default function Sidebar({
             <div className="space-y-1">
               {[
                 {
+                  name: "AI Media Studio",
+                  href: "/dashboard/generate",
+                  badge: "10 tools",
+                  icon: (
+                    <>
+                      <path d="M12 3l1.912 5.813a2 2 0 001.272 1.272L21 12l-5.816 1.915a2 2 0 00-1.272 1.272L12 21l-1.912-5.813a2 2 0 00-1.272-1.272L3 12l5.816-1.915a2 2 0 001.272-1.272L12 3z" />
+                    </>
+                  ),
+                },
+                {
                   name: "Video",
                   href: "/dashboard/video",
                   icon: (

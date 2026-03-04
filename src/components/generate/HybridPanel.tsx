@@ -25,7 +25,7 @@ export default function HybridPanel() {
 
       {/* Steps */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
-        {PIPELINE_STEPS.map((step, i) => (
+        {PIPELINE_STEPS.map((step) => (
           <div key={step.name} style={{
             padding: 10, borderRadius: 8, textAlign: "center",
             background: step.status === "completed" ? "rgba(16,185,129,0.06)" : step.status === "awaiting" ? "rgba(245,158,11,0.06)" : "var(--bg-tertiary)",

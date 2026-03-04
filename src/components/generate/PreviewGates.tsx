@@ -16,7 +16,7 @@ export default function PreviewGates() {
     <div style={{ marginBottom: 20 }}>
       <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--text-secondary)", marginBottom: 8 }}>Preview Gates</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
-        {GATES.map((g, i) => (
+        {GATES.map((g) => (
           <button
             key={g.key}
             onClick={() => router.push(`/dashboard/preview?stage=${g.key}`)}

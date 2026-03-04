@@ -1,3 +1,83 @@
+@import "tailwindcss";
+
+@theme {
+  /* ─── Background scale ─── */
+  --color-bg-0: #04040a;
+  --color-bg-1: #07070e;
+  --color-bg-2: #0c0c14;
+  --color-bg-3: #12121c;
+  --color-bg-4: #1a1a26;
+  --color-bg-5: #222232;
+
+  /* ─── Border ─── */
+  --color-bdr: rgba(255, 255, 255, 0.06);
+  --color-bdr-2: rgba(255, 255, 255, 0.12);
+
+  /* ─── Text ─── */
+  --color-t-1: #f0f0f5;
+  --color-t-2: #a0a0b4;
+  --color-t-3: #606074;
+  --color-t-4: #3c3c50;
+
+  /* ─── Accent ─── */
+  --color-acc: #00ff88;
+  --color-acc-2: #00cc6a;
+  --color-acc-glow: rgba(0, 255, 136, 0.08);
+  --color-blu: #0088ff;
+  --color-pur: #8855ff;
+  --color-amb: #ffaa00;
+  --color-red: #ff4455;
+
+  /* ─── Radii (locked scale) ─── */
+  --radius-r1: 8px;
+  --radius-r2: 12px;
+  --radius-r3: 16px;
+  --radius-r4: 20px;
+  --radius-r5: 24px;
+  --radius-pill: 999px;
+
+  /* ─── Shadows (locked scale) ─── */
+  --shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 18px 60px rgba(0, 0, 0, 0.10);
+
+  /* ─── Font families ─── */
+  --font-sans: 'Outfit', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* ─── Spacing (4px base, locked scale) ─── */
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-10: 40px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+  --spacing-20: 80px;
+  --spacing-24: 96px;
+
+  /* ─── Timing (locked: 150–220ms) ─── */
+  --duration-fast: 150ms;
+  --duration-base: 180ms;
+  --duration-slow: 220ms;
+
+  /* ─── Legacy aliases for existing sidebar/layout classes ─── */
+  --color-bg-primary: #04040a;
+  --color-bg-secondary: #07070e;
+  --color-bg-tertiary: #0c0c14;
+  --color-text-primary: #f0f0f5;
+  --color-text-secondary: #a0a0b4;
+  --color-text-muted: #606074;
+  --color-border-color: rgba(255, 255, 255, 0.06);
+  --color-accent-indigo: #6366f1;
+  --color-accent-purple: #8b5cf6;
+  --color-accent: #00ff88;
+  --color-border: rgba(255, 255, 255, 0.06);
+}
+
 *,
 *::before,
 *::after {
@@ -7,6 +87,48 @@
 }
 
 body {
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: var(--font-sans);
+  background: var(--color-bg-0);
+  color: var(--color-t-1);
   -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgba(0, 255, 136, 0.2);
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-bg-5);
+  border-radius: 2px;
+}
+
+/* ─── Keyframes ─── */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.2s ease;
+}
+
+.animate-spin-fast {
+  animation: spin 0.6s linear infinite;
+}
+
+.animate-pulse-live {
+  animation: pulse-live 3s infinite;
 }
