@@ -1,0 +1,11 @@
+import a1 from './agents/agent-01.webp'
+import a2 from './agents/agent-02.webp'
+import a3 from './agents/agent-03.webp'
+import a4 from './agents/agent-04.webp'
+import a5 from './agents/agent-05.webp'
+import a6 from './agents/agent-06.webp'
+import a7 from './agents/agent-07.webp'
+import a8 from './agents/agent-08.webp'
+import a9 from './agents/agent-09.webp'
+import a10 from './agents/agent-10.webp'
+export default { 1: a1, 2: a2, 3: a3, 4: a4, 5: a5, 6: a6, 7: a7, 8: a8, 9: a9, 10: a10 }
