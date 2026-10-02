@@ -1,36 +1,13 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Agent Workforce front (owner mockup "Agent Workforce", 2026-10-01)
 
-## Getting Started
-
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `src/Workforce.jsx` — `AgentWorkforceFront` (header, nav, 10 agent cards, instructions, quick actions,
+  recent jobs, specialties, system status) + `WorkspacePanel` (slide-out workspace from image 1; opens from a card,
+  closes on X / Escape / backdrop, focus moves to Close).
+- `src/data.js` — render fixture copied from the mockup. Replace with the `/api/v1/workforce` adapter; the screen
+  reads only these shapes (AGENTS, JOBS, SYSTEM, OWNER).
+- `src/assets/agents/agent-01..10.webp` — art cut from the owner mockup (label-free band of each card).
+  `mh-crest.webp`, `builder-portrait.webp` — header art from the same mockup.
+- Not yet integrated into PR #115 (`src/components/streams-ai/clean-chat/src/react/AgentWorkforceFront.jsx`):
+  that source is not available in this sandbox.
+- Build: `./build.sh` (esbuild). Audit: `python3 audit.py` (overflow, truncation, edge clipping, placeholders,
+  touch targets, images, axe, workspace focus + Escape).

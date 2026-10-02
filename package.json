@@ -1,44 +1,22 @@
 {
-  "name": "streamsai",
+  "name": "wf",
   "version": "1.0.0",
-  "private": true,
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "ESLINT_USE_FLAT_CONFIG=false eslint src --ext .ts,.tsx --max-warnings 100",
-    "type-check": "tsc --noEmit",
-    "test": "npx playwright test",
-    "worker:image": "TOOL_TYPE=image tsx workers/generation-worker.ts",
-    "worker:video": "TOOL_TYPE=video tsx workers/generation-worker.ts",
-    "worker:voice": "TOOL_TYPE=voice tsx workers/generation-worker.ts",
-    "worker:script": "TOOL_TYPE=script tsx workers/generation-worker.ts",
-    "worker:all": "tsx workers/generation-worker.ts"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
   "dependencies": {
-    "@google/genai": "^1.0.0",
-    "@supabase/ssr": "^0.6.1",
-    "@supabase/supabase-js": "^2.49.0",
-    "@tailwindcss/postcss": "^4.2.1",
-    "next": "^16.1.6",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "stripe": "^20.4.0",
-    "tailwindcss": "^4.2.1",
-    "uuid": "^11.0.0",
-    "zod": "^3.24.0"
-  },
-  "devDependencies": {
-    "@playwright/test": "^1.49.0",
-    "@types/node": "^22.0.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "@types/uuid": "^10.0.0",
-    "@typescript-eslint/eslint-plugin": "^8.56.1",
-    "@typescript-eslint/parser": "^8.56.1",
-    "eslint": "^9.39.3",
-    "eslint-config-next": "^15.5.12",
-    "tsx": "^4.19.0",
-    "typescript": "^5.7.0"
+    "@fontsource/great-vibes": "^5.3.0",
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/orbitron": "^5.3.0",
+    "axe-core": "^4.13.0",
+    "esbuild": "^0.28.2",
+    "lucide-react": "^1.49.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   }
 }
