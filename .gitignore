@@ -39,3 +39,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 test-results/
+
+# SECURITY (2026-10-12): never commit environment files — real keys belong in Vercel → Settings → Environment Variables.
+.env*
+!.env.example
+!.env.sample
+!.env.template
